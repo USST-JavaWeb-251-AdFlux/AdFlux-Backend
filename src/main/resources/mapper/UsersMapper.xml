@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.usst.adfluxbackend.mapper.UsersMapper">
+
+    <resultMap id="BaseResultMap" type="com.usst.adfluxbackend.model.entity.Users">
+            <id property="userId" column="userId" />
+            <result property="username" column="username" />
+            <result property="userPassword" column="userPassword" />
+            <result property="userRole" column="userRole" />
+            <result property="email" column="email" />
+            <result property="phone" column="phone" />
+            <result property="createTime" column="createTime" />
+    </resultMap>
+
+    <sql id="Base_Column_List">
+        userId,username,userPassword,userRole,email,phone,
+        createTime
+    </sql>
+</mapper>
