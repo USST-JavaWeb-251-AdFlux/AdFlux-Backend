@@ -5,19 +5,26 @@ import cn.hutool.core.util.StrUtil;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.usst.adfluxbackend.constant.UserConstant;
+import com.usst.adfluxbackend.context.BaseContext;
 import com.usst.adfluxbackend.exception.BusinessException;
 import com.usst.adfluxbackend.exception.ErrorCode;
+import com.usst.adfluxbackend.exception.TokenException;
 import com.usst.adfluxbackend.model.dto.user.UserRegisterRequest;
 import com.usst.adfluxbackend.model.entity.Users;
 import com.usst.adfluxbackend.model.enums.UserRoleEnum;
 import com.usst.adfluxbackend.model.vo.LoginUserVO;
 import com.usst.adfluxbackend.service.UsersService;
 import com.usst.adfluxbackend.mapper.UsersMapper;
+import com.usst.adfluxbackend.utils.JwtUtils;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.el.parser.Token;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.util.DigestUtils;
 
 import javax.servlet.http.HttpServletRequest;
+import java.util.HashMap;
+import java.util.Map;
 
 /**
 * @author 30637
@@ -29,28 +36,9 @@ import javax.servlet.http.HttpServletRequest;
 public class UsersServiceImpl extends ServiceImpl<UsersMapper, Users>
     implements UsersService{
 
-    /**
-     * 获取当前登录用户
-     *
-     * @param request 请求
-     * @return 当前登录用户
-     */
-    @Override
-    public Users getLoginUser(HttpServletRequest request) {
-        // 判断是否已经登录
-        Object userObj = request.getSession().getAttribute(UserConstant.USER_LOGIN_STATE);
-        Users currentUser = (Users) userObj;
-        if (currentUser == null || currentUser.getUserId() == null) {
-            throw new BusinessException(ErrorCode.NOT_LOGIN_ERROR);
-        }
-        // 从数据库中查询（追求性能的话可以注释，直接返回上述结果）
-        Long userId = currentUser.getUserId();
-        currentUser = this.getById(userId);
-        if (currentUser == null) {
-            throw new BusinessException(ErrorCode.NOT_LOGIN_ERROR);
-        }
-        return currentUser;
-    }
+    @Autowired
+    private JwtUtils jwtUtils;
+
 
     /**
      * 获取脱敏类的用户信息
@@ -82,18 +70,11 @@ public class UsersServiceImpl extends ServiceImpl<UsersMapper, Users>
         }
         String username = userRegisterRequest.getUsername();
         String userPassword = userRegisterRequest.getUserPassword();
-        String checkPassword = userRegisterRequest.getCheckPassword();
-        if (StrUtil.hasBlank(username, userPassword, checkPassword)) {
-            throw new BusinessException(ErrorCode.PARAMS_ERROR, "参数为空");
-        }
         if (username.length() < 4) {
             throw new BusinessException(ErrorCode.PARAMS_ERROR, "用户账号过短");
         }
-        if (userPassword.length() < 8 || checkPassword.length() < 8) {
+        if (userPassword.length() < 8) {
             throw new BusinessException(ErrorCode.PARAMS_ERROR, "用户密码过短");
-        }
-        if (!userPassword.equals(checkPassword)) {
-            throw new BusinessException(ErrorCode.PARAMS_ERROR, "两次输入的密码不一致");
         }
         // 2. 检查用户账号是否和数据库中已有的重复
         QueryWrapper<Users> queryWrapper = new QueryWrapper<>();
@@ -132,7 +113,7 @@ public class UsersServiceImpl extends ServiceImpl<UsersMapper, Users>
     }
 
     @Override
-    public LoginUserVO userLogin(String username, String userPassword, HttpServletRequest request) {
+    public LoginUserVO userLogin(String username, String userPassword) {
         // 1. 校验
         if (StrUtil.hasBlank(username, userPassword)) {
             throw new BusinessException(ErrorCode.PARAMS_ERROR, "参数为空");
@@ -156,11 +137,29 @@ public class UsersServiceImpl extends ServiceImpl<UsersMapper, Users>
             throw new BusinessException(ErrorCode.PARAMS_ERROR, "用户不存在或者密码错误");
         }
         // 4. 保存用户的登录态 用于判断用户是否登录
-        request.getSession().setAttribute(UserConstant.USER_LOGIN_STATE, user);
-        return this.getLoginUserVO(user);
+        Map<String, Object> jwtClaims = new HashMap<>();
+        jwtClaims.put("userId", user.getUserId());
+        jwtClaims.put("username", username);
+        jwtClaims.put("userRole", user.getUserRole());
+        // 生成token
+        String token = jwtUtils.generateToken(jwtClaims);
+        // 5. 脱敏返回用户信息
+        LoginUserVO loginUserVO = this.getLoginUserVO(user);
+        loginUserVO.setToken(token);
+        return loginUserVO;
+    }
+
+    /**
+     * 获取当前登录用户
+     *
+     * @return 当前登录用户
+     */
+    @Override
+    public Users getLoginUser() {
+        Long currentId = BaseContext.getCurrentId();
+        if (currentId == null) {
+            throw new TokenException(ErrorCode.TOKEN_ERROR, "Token过期或无效");
+        }
+        return baseMapper.selectById(currentId);
     }
 }
-
-
-
-

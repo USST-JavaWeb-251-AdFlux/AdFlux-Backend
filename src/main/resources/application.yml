@@ -21,6 +21,10 @@ spring:
   servlet:
     multipart:
       max-file-size: 10MB
+# JWT配置
+jwt:
+  secret: adflux_backend_secret_key_adflux_backend_secret_key # 至少32位
+  expiration: 86400000 # 24小时，单位毫秒
 mybatis-plus:
   configuration:
     # MyBatis 配置

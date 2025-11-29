@@ -20,10 +20,6 @@ public class UserRegisterRequest {
      */
     private String userPassword;
 
-    /**
-     * 确认密码
-     */
-    private String checkPassword;
 
     /**
      * 手机号

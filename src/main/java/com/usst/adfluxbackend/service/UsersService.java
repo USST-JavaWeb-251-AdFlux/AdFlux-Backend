@@ -15,14 +15,6 @@ import javax.servlet.http.HttpServletRequest;
 public interface UsersService extends IService<Users> {
 
     /**
-     * 获取当前登录用户
-     *
-     * @param request
-     * @return
-     */
-    Users getLoginUser(HttpServletRequest request);
-
-    /**
      * 获取登录用户的VO对象
      *
      * @param loginUser
@@ -51,8 +43,14 @@ public interface UsersService extends IService<Users> {
       *
       * @param username
       * @param userPassword
-      * @param request
       * @return
       */
-    LoginUserVO userLogin(String username, String userPassword, HttpServletRequest request);
+    LoginUserVO userLogin(String username, String userPassword);
+
+     /**
+      * 获取当前登录用户
+      *
+      * @return
+      */
+    Users getLoginUser();
 }
