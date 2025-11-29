@@ -1,7 +1,5 @@
 package com.usst.adfluxbackend.exception;
 
-import cn.dev33.satoken.exception.NotLoginException;
-import cn.dev33.satoken.exception.NotPermissionException;
 import com.usst.adfluxbackend.common.BaseResponse;
 import com.usst.adfluxbackend.common.ResultUtils;
 import lombok.extern.slf4j.Slf4j;
@@ -13,20 +11,6 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
 @RestControllerAdvice
 @Slf4j
 public class GlobalExceptionHandler {
-
-    /**
-     * 未登录 -> 返回 HTTP 401
-     */
-    @ExceptionHandler(NotLoginException.class)
-    public ResponseEntity<BaseResponse<?>> notLoginException(NotLoginException e) {
-        log.error("NotLoginException", e);
-        // 构造响应体
-        BaseResponse<?> response = ResultUtils.error(ErrorCode.NOT_LOGIN_ERROR, e.getMessage());
-        // 返回 ResponseEntity：状态码 401 + 响应体
-        return new ResponseEntity<>(response, HttpStatus.UNAUTHORIZED);
-    }
-
-
     /**
      * Token异常 -> 返回 HTTP 401
      */
@@ -37,15 +21,6 @@ public class GlobalExceptionHandler {
         return new ResponseEntity<>(response, HttpStatus.UNAUTHORIZED);
     }
 
-    /**
-     * 无权限 -> 返回 HTTP 403
-     */
-    @ExceptionHandler(NotPermissionException.class)
-    public ResponseEntity<BaseResponse<?>> notPermissionExceptionHandler(NotPermissionException e) {
-        log.error("NotPermissionException", e);
-        BaseResponse<?> response = ResultUtils.error(ErrorCode.NO_AUTH_ERROR, e.getMessage());
-        return new ResponseEntity<>(response, HttpStatus.FORBIDDEN);
-    }
 
     /**
      * 业务异常 -> 建议返回 HTTP 400 (Bad Request) 或者根据业务码动态判断
