@@ -34,12 +34,16 @@ import java.util.Map;
 public class UsersServiceImpl extends ServiceImpl<UsersMapper, Users>
     implements UsersService{
 
-    @Autowired
-    private JwtUtils jwtUtils;
+    private final JwtUtils jwtUtils;
+    private final PasswordEncoder passwordEncoder;
 
     // Use BCrypt for password hashing
-    private final PasswordEncoder passwordEncoder = new BCryptPasswordEncoder();
 
+    @Autowired
+    public UsersServiceImpl(JwtUtils jwtUtils, PasswordEncoder passwordEncoder) {
+        this.jwtUtils = jwtUtils;
+        this.passwordEncoder = passwordEncoder;
+    }
     /**
      * 获取脱敏类的用户信息
      *
