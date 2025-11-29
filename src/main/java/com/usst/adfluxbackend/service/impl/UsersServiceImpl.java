@@ -15,6 +15,7 @@ import com.usst.adfluxbackend.model.vo.LoginUserVO;
 import com.usst.adfluxbackend.service.UsersService;
 import com.usst.adfluxbackend.mapper.UsersMapper;
 import com.usst.adfluxbackend.utils.JwtUtils;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -31,19 +32,13 @@ import java.util.Map;
 */
 @Service
 @Slf4j
+@RequiredArgsConstructor
 public class UsersServiceImpl extends ServiceImpl<UsersMapper, Users>
     implements UsersService{
 
     private final JwtUtils jwtUtils;
     private final PasswordEncoder passwordEncoder;
 
-    // Use BCrypt for password hashing
-
-    @Autowired
-    public UsersServiceImpl(JwtUtils jwtUtils, PasswordEncoder passwordEncoder) {
-        this.jwtUtils = jwtUtils;
-        this.passwordEncoder = passwordEncoder;
-    }
     /**
      * 获取脱敏类的用户信息
      *
@@ -93,7 +88,7 @@ public class UsersServiceImpl extends ServiceImpl<UsersMapper, Users>
         Users user = new Users();
         user.setUsername(username);
         user.setUserPassword(encryptPassword);
-        user.setUserRole(UserRoleEnum.ADMIN.getValue());
+        user.setUserRole(userRegisterRequest.getRole());
         user.setPhone(userRegisterRequest.getPhone());
         user.setEmail(userRegisterRequest.getEmail());
         boolean saveResult = this.save(user);

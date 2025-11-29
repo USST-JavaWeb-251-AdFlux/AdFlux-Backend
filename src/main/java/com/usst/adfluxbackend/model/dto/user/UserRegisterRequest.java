@@ -20,7 +20,10 @@ public class UserRegisterRequest {
      */
     private String userPassword;
 
-
+    /**
+     * 角色
+     */
+    private String role;
     /**
      * 手机号
      */
