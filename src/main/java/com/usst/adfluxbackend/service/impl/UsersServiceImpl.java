@@ -115,12 +115,12 @@ public class UsersServiceImpl extends ServiceImpl<UsersMapper, Users>
         Users user = this.baseMapper.selectOne(queryWrapper);
         // 不存在，抛异常
         if (user == null) {
-            log.info("user login failed, user not found: {}", username);
+            log.info("user login failed: invalid credentials");
             throw new BusinessException(ErrorCode.PARAMS_ERROR, "用户不存在或者密码错误");
         }
         // 密码错误
         if (!passwordEncoder.matches(userPassword, user.getUserPassword())) {
-            log.info("user login failed, password mismatch for user: {}", username);
+            log.info("user login failed: invalid credentials");
             throw new BusinessException(ErrorCode.PARAMS_ERROR, "用户不存在或者密码错误");
         }
         // 4. 保存用户的登录态 用于判断用户是否登录
