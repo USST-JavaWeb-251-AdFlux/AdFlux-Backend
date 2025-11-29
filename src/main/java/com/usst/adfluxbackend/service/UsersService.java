@@ -30,14 +30,6 @@ public interface UsersService extends IService<Users> {
      */
     long userRegister(UserRegisterRequest userRegisterRequest);
 
-    /**
-     * 获取加密后的密码
-     *
-     * @param userPassword
-     * @return
-     */
-    String getEncryptPassword(String userPassword);
-
      /**
       * 用户登录
       *
