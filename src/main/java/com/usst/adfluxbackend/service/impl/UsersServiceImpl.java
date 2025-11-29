@@ -4,7 +4,6 @@ import cn.hutool.core.bean.BeanUtil;
 import cn.hutool.core.util.StrUtil;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
-import com.usst.adfluxbackend.constant.UserConstant;
 import com.usst.adfluxbackend.context.BaseContext;
 import com.usst.adfluxbackend.exception.BusinessException;
 import com.usst.adfluxbackend.exception.ErrorCode;
@@ -17,12 +16,11 @@ import com.usst.adfluxbackend.service.UsersService;
 import com.usst.adfluxbackend.mapper.UsersMapper;
 import com.usst.adfluxbackend.utils.JwtUtils;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.el.parser.Token;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
-import org.springframework.util.DigestUtils;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
+import org.springframework.security.crypto.password.PasswordEncoder;
 
-import javax.servlet.http.HttpServletRequest;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -36,10 +34,16 @@ import java.util.Map;
 public class UsersServiceImpl extends ServiceImpl<UsersMapper, Users>
     implements UsersService{
 
+    private final JwtUtils jwtUtils;
+    private final PasswordEncoder passwordEncoder;
+
+    // Use BCrypt for password hashing
+
     @Autowired
-    private JwtUtils jwtUtils;
-
-
+    public UsersServiceImpl(JwtUtils jwtUtils, PasswordEncoder passwordEncoder) {
+        this.jwtUtils = jwtUtils;
+        this.passwordEncoder = passwordEncoder;
+    }
     /**
      * 获取脱敏类的用户信息
      *
@@ -71,7 +75,7 @@ public class UsersServiceImpl extends ServiceImpl<UsersMapper, Users>
         String username = userRegisterRequest.getUsername();
         String userPassword = userRegisterRequest.getUserPassword();
         if (username.length() < 4) {
-            throw new BusinessException(ErrorCode.PARAMS_ERROR, "用户账号过短");
+            throw new BusinessException(ErrorCode.PARAMS_ERROR, "用户名过短");
         }
         if (userPassword.length() < 8) {
             throw new BusinessException(ErrorCode.PARAMS_ERROR, "用户密码过短");
@@ -81,10 +85,10 @@ public class UsersServiceImpl extends ServiceImpl<UsersMapper, Users>
         queryWrapper.eq("username", username);
         long count = this.baseMapper.selectCount(queryWrapper);
         if (count > 0) {
-            throw new BusinessException(ErrorCode.PARAMS_ERROR, "账号重复");
+            throw new BusinessException(ErrorCode.PARAMS_ERROR, "用户名已被占用");
         }
-        // 3. 密码一定要加密
-        String encryptPassword = getEncryptPassword(userPassword);
+        // 3. 密码一定要加密（BCrypt）
+        String encryptPassword = passwordEncoder.encode(userPassword);
         // 4. 插入数据到数据库中
         Users user = new Users();
         user.setUsername(username);
@@ -99,41 +103,24 @@ public class UsersServiceImpl extends ServiceImpl<UsersMapper, Users>
         return user.getUserId();
     }
 
-    /**
-     * 获取加密后的密码
-     *
-     * @param userPassword 用户密码
-     * @return 加密后的密码
-     */
-    @Override
-    public String getEncryptPassword(String userPassword) {
-        // 加盐，混淆密码
-        final String SALT = "usst";
-        return DigestUtils.md5DigestAsHex((SALT + userPassword).getBytes());
-    }
-
     @Override
     public LoginUserVO userLogin(String username, String userPassword) {
         // 1. 校验
         if (StrUtil.hasBlank(username, userPassword)) {
             throw new BusinessException(ErrorCode.PARAMS_ERROR, "参数为空");
         }
-        if (username.length() < 4) {
-            throw new BusinessException(ErrorCode.PARAMS_ERROR, "用户账号错误");
-        }
-        if (userPassword.length() < 8) {
-            throw new BusinessException(ErrorCode.PARAMS_ERROR, "用户密码错误");
-        }
-        // 2. 对用户传递的密码进行加密
-        String encryptPassword = getEncryptPassword(userPassword);
-        // 3. 查询数据库中的用户是否存在
+        // 2. 查询数据库中的用户是否存在（按用户名查询），然后用 BCrypt 校验密码
         QueryWrapper<Users> queryWrapper = new QueryWrapper<>();
         queryWrapper.eq("username", username);
-        queryWrapper.eq("userPassword", encryptPassword);
         Users user = this.baseMapper.selectOne(queryWrapper);
         // 不存在，抛异常
         if (user == null) {
-            log.info("user login failed, userAccount cannot match userPassword");
+            log.info("user login failed: invalid credentials");
+            throw new BusinessException(ErrorCode.PARAMS_ERROR, "用户不存在或者密码错误");
+        }
+        // 密码错误
+        if (!passwordEncoder.matches(userPassword, user.getUserPassword())) {
+            log.info("user login failed: invalid credentials");
             throw new BusinessException(ErrorCode.PARAMS_ERROR, "用户不存在或者密码错误");
         }
         // 4. 保存用户的登录态 用于判断用户是否登录
