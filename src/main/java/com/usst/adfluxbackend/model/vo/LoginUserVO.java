@@ -12,11 +12,6 @@ import java.util.Date;
 public class LoginUserVO implements Serializable {
 
     /**
-     * id
-     */
-    private Long userId;
-
-    /**
      * 用户名
      */
     private String username;
@@ -27,20 +22,9 @@ public class LoginUserVO implements Serializable {
     private String userRole;
 
     /**
-     * 邮箱
+     * token
      */
-    private String email;
-
-    /**
-     * 电话
-     */
-    private String phone;
-
-    /**
-     * 创建时间
-     */
-    private Date createTime;
-
+    private String token;
 
     private static final long serialVersionUID = 1L;
 }
