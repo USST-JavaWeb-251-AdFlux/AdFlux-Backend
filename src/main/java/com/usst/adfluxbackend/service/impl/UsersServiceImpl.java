@@ -88,6 +88,15 @@ public class UsersServiceImpl extends ServiceImpl<UsersMapper, Users>
         Users user = new Users();
         user.setUsername(username);
         user.setUserPassword(encryptPassword);
+        // 校验角色是否合法
+        UserRoleEnum userRoleEnum = UserRoleEnum.getEnumByValue(userRegisterRequest.getRole());
+        if (userRoleEnum == null) {
+            throw new BusinessException(ErrorCode.PARAMS_ERROR, "角色不合法");
+        }
+        // admin 不能注册
+        if (userRoleEnum == UserRoleEnum.ADMIN) {
+            throw new BusinessException(ErrorCode.PARAMS_ERROR, "admin用户不能注册");
+        }
         user.setUserRole(userRegisterRequest.getRole());
         user.setPhone(userRegisterRequest.getPhone());
         user.setEmail(userRegisterRequest.getEmail());
