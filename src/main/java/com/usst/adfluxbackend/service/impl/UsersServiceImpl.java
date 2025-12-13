@@ -136,7 +136,6 @@ public class UsersServiceImpl extends ServiceImpl<UsersMapper, Users>
         String token = jwtUtils.generateToken(jwtClaims);
         // 5. 脱敏返回用户信息
         LoginUserVO loginUserVO = this.getLoginUserVO(user);
-        loginUserVO.setToken(token);
         return loginUserVO;
     }
 

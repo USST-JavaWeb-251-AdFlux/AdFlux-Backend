@@ -7,7 +7,7 @@ import lombok.Data;
 import java.io.Serializable;
 
 /**
- * 全局响应封装类
+ * 通用返回类
  *
  * @param <T>
  */
