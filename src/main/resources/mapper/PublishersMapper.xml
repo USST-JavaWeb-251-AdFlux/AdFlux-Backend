@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.usst.adfluxbackend.mapper.PublishersMapper">
+
+    <resultMap id="BaseResultMap" type="com.usst.adfluxbackend.model.entity.Publishers">
+            <id property="websiteId" column="websiteId" />
+            <result property="publisherId" column="publisherId" />
+            <result property="websiteName" column="websiteName" />
+            <result property="domain" column="domain" />
+            <result property="verificationToken" column="verificationToken" />
+            <result property="isVerified" column="isVerified" />
+            <result property="createTime" column="createTime" />
+            <result property="verifyTime" column="verifyTime" />
+    </resultMap>
+
+    <sql id="Base_Column_List">
+        websiteId,publisherId,websiteName,domain,verificationToken,isVerified,
+        createTime,verifyTime
+    </sql>
+</mapper>

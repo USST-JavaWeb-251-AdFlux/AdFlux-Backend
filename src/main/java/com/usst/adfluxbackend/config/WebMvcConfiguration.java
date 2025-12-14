@@ -35,6 +35,10 @@ public class WebMvcConfiguration implements WebMvcConfigurer {
                         "/auth/register",
                         "/swagger-ui/**",
                         "/v3/api-docs/**",
+                        "/doc.html",
+                        "/webjars/**",
+                        "/swagger-resources/**",
+                        "/favicon.ico",
                         resourceExclusion
                 );
     }

@@ -10,13 +10,13 @@ spring:
   profiles:
     active: dev
   application:
-    name: News-Backend
+    name: AdFlux-Backend
   #  数据库配置
   datasource:
-    driver-class-name: ${news.datasource.driver-class-name}
-    url: jdbc:mysql://${news.datasource.host}:${news.datasource.port}/${news.datasource.database}?serverTimezone=Asia/Shanghai&useUnicode=true&characterEncoding=utf-8&zeroDateTimeBehavior=convertToNull&useSSL=false&allowPublicKeyRetrieval=true
-    username: ${news.datasource.username}
-    password: ${news.datasource.password}
+    driver-class-name: ${adflux.datasource.driver-class-name}
+    url: jdbc:mysql://${adflux.datasource.host}:${adflux.datasource.port}/${adflux.datasource.database}?serverTimezone=Asia/Shanghai&useUnicode=true&characterEncoding=utf-8&zeroDateTimeBehavior=convertToNull&useSSL=false&allowPublicKeyRetrieval=true
+    username: ${adflux.datasource.username}
+    password: ${adflux.datasource.password}
   # 开放更大的文件上传体积
   servlet:
     multipart:
@@ -48,7 +48,7 @@ knife4j:
       default:
         api-rule: package
         api-rule-resources:
-          - com.usst.newsBackend.controller
+          - com.usst.adfluxbackend.controller
 
 # 文件上传配置
 ad-system:

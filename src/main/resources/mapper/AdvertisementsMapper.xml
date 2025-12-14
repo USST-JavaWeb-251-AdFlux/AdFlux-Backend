@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.usst.adfluxbackend.mapper.AdvertisementsMapper">
+
+    <resultMap id="BaseResultMap" type="com.usst.adfluxbackend.model.entity.Advertisements">
+            <id property="adId" column="adId" />
+            <result property="advertiserId" column="advertiserId" />
+            <result property="adType" column="adType" />
+            <result property="mediaUrl" column="mediaUrl" />
+            <result property="title" column="title" />
+            <result property="landingPage" column="landingPage" />
+            <result property="categoryId" column="categoryId" />
+            <result property="weeklyBudget" column="weeklyBudget" />
+            <result property="reviewStatus" column="reviewStatus" />
+            <result property="isActive" column="isActive" />
+            <result property="createTime" column="createTime" />
+            <result property="editTime" column="editTime" />
+            <result property="adLayout" column="adLayout" />
+    </resultMap>
+
+    <sql id="Base_Column_List">
+        adId,advertiserId,adType,mediaUrl,title,landingPage,
+        categoryId,weeklyBudget,reviewStatus,isActive,createTime,
+        editTime,adLayout
+    </sql>
+</mapper>
