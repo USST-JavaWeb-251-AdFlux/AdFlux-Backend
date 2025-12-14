@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.usst.adfluxbackend.mapper.AdvertiserPaymentsMapper">
+
+    <resultMap id="BaseResultMap" type="com.usst.adfluxbackend.model.entity.AdvertiserPayments">
+            <id property="paymentId" column="paymentId" />
+            <result property="advertiserId" column="advertiserId" />
+            <result property="cardNumber" column="cardNumber" />
+            <result property="bankName" column="bankName" />
+    </resultMap>
+
+    <sql id="Base_Column_List">
+        paymentId,advertiserId,cardNumber,bankName
+    </sql>
+</mapper>
