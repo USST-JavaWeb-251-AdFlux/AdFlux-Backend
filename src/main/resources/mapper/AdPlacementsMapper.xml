@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.usst.adfluxbackend.mapper.AdPlacementsMapper">
+
+    <resultMap id="BaseResultMap" type="com.usst.adfluxbackend.model.entity.AdPlacements">
+            <id property="placementId" column="placementId" />
+            <result property="websiteId" column="websiteId" />
+            <result property="placementName" column="placementName" />
+            <result property="adLayout" column="adLayout" />
+            <result property="createTime" column="createTime" />
+    </resultMap>
+
+    <sql id="Base_Column_List">
+        placementId,websiteId,placementName,adLayout,createTime
+    </sql>
+</mapper>

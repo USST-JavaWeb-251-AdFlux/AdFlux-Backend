@@ -22,5 +22,10 @@ public class LoginUserVO implements Serializable {
     private String userRole;
 
 
+    /**
+     * token
+     */
+    private String token;
+
     private static final long serialVersionUID = 1L;
 }

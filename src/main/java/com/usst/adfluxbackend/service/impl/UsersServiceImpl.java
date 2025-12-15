@@ -22,7 +22,10 @@ import org.springframework.stereotype.Service;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
+import java.time.LocalDateTime;
+import java.util.Date;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -31,8 +34,7 @@ import java.util.Map;
 * @createDate 2025-11-27 20:34:47
 */
 @Service
-@Slf4j
-@RequiredArgsConstructor
+@Slf4j@RequiredArgsConstructor
 public class UsersServiceImpl extends ServiceImpl<UsersMapper, Users>
     implements UsersService{
 
@@ -43,7 +45,7 @@ public class UsersServiceImpl extends ServiceImpl<UsersMapper, Users>
      * 获取脱敏类的用户信息
      *
      * @param user 用户
-     * @return 脱敏后的用户信息
+     * @return脱敏后的用户信息
      */
     @Override
     public LoginUserVO getLoginUserVO(Users user) {
@@ -83,7 +85,7 @@ public class UsersServiceImpl extends ServiceImpl<UsersMapper, Users>
             throw new BusinessException(ErrorCode.PARAMS_ERROR, "用户名已被占用");
         }
         // 3. 密码一定要加密（BCrypt）
-        String encryptPassword = passwordEncoder.encode(userPassword);
+       String encryptPassword = passwordEncoder.encode(userPassword);
         // 4. 插入数据到数据库中
         Users user = new Users();
         user.setUsername(username);
@@ -103,7 +105,7 @@ public class UsersServiceImpl extends ServiceImpl<UsersMapper, Users>
         boolean saveResult = this.save(user);
         if (!saveResult) {
             throw new BusinessException(ErrorCode.SYSTEM_ERROR, "注册失败，数据库错误");
-        }
+}
         return user.getUserId();
     }
 
@@ -112,7 +114,7 @@ public class UsersServiceImpl extends ServiceImpl<UsersMapper, Users>
         // 1. 校验
         if (StrUtil.hasBlank(username, userPassword)) {
             throw new BusinessException(ErrorCode.PARAMS_ERROR, "参数为空");
-        }
+       }
         // 2. 查询数据库中的用户是否存在（按用户名查询），然后用 BCrypt 校验密码
         QueryWrapper<Users> queryWrapper = new QueryWrapper<>();
         queryWrapper.eq("username", username);
@@ -130,12 +132,13 @@ public class UsersServiceImpl extends ServiceImpl<UsersMapper, Users>
         // 4. 保存用户的登录态 用于判断用户是否登录
         Map<String, Object> jwtClaims = new HashMap<>();
         jwtClaims.put("userId", user.getUserId());
-        jwtClaims.put("username", username);
+jwtClaims.put("username", username);
         jwtClaims.put("userRole", user.getUserRole());
         // 生成token
         String token = jwtUtils.generateToken(jwtClaims);
         // 5. 脱敏返回用户信息
         LoginUserVO loginUserVO = this.getLoginUserVO(user);
+        loginUserVO.setToken(token);
         return loginUserVO;
     }
 
@@ -151,5 +154,67 @@ public class UsersServiceImpl extends ServiceImpl<UsersMapper, Users>
             throw new TokenException(ErrorCode.TOKEN_ERROR, "Token过期或无效");
         }
         return baseMapper.selectById(currentId);
+    }
+    
+/**
+     * 管理员获取用户列表
+     *
+     * @param role 角色过滤
+     * @return 用户列表
+     */
+    @Override
+    public List<Users> listUsers(String role) {
+        QueryWrapper<Users> queryWrapper = new QueryWrapper<>();
+        if(role != null && !role.isEmpty()) {
+            queryWrapper.eq("userRole", role);
+        }
+        return this.list(queryWrapper);
+    }
+    
+    /**
+     * 管理员创建管理员账号
+     *
+     * @param username 用户名
+     * @param password 密码
+    * @param email 邮箱
+     * @param phone 电话
+     * @return 创建的管理员用户
+     */
+    @Override
+    public Users createAdmin(String username, String password, String email, String phone) {
+        // 1. 校验参数
+        if (username ==null || username.length() < 4) {
+            throw new BusinessException(ErrorCode.PARAMS_ERROR, "用户名过短");
+        }
+        if (password == null || password.length() < 8) {
+            throw new BusinessException(ErrorCode.PARAMS_ERROR, "用户密码过短");
+        }
+        
+        // 2. 检查用户账号是否和数据库中已有的重复
+        QueryWrapper<Users> queryWrapper = new QueryWrapper<>();
+        queryWrapper.eq("username", username);
+        long count = this.baseMapper.selectCount(queryWrapper);
+        if (count > 0) {
+            throw new BusinessException(ErrorCode.PARAMS_ERROR, "用户名已被占用");
+        }
+        
+        // 3. 密码一定要加密（BCrypt）
+        String encryptPassword = passwordEncoder.encode(password);
+        
+        // 4. 插入数据到数据库中
+        Users user = new Users();
+        user.setUsername(username);
+        user.setUserPassword(encryptPassword);
+        user.setUserRole("admin");
+        user.setEmail(email);
+        user.setPhone(phone);
+        user.setCreateTime(new Date());
+        
+        boolean saveResult = this.save(user);
+        if (!saveResult) {
+            throw new BusinessException(ErrorCode.SYSTEM_ERROR, "创建失败，数据库错误");
+        }
+        
+        return user;
     }
 }

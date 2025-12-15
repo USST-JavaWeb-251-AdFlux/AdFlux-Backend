@@ -1,11 +1,13 @@
 package com.usst.adfluxbackend.service;
 
+import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.usst.adfluxbackend.model.dto.user.UserRegisterRequest;
 import com.usst.adfluxbackend.model.entity.Users;
 import com.baomidou.mybatisplus.extension.service.IService;
 import com.usst.adfluxbackend.model.vo.LoginUserVO;
 
 import javax.servlet.http.HttpServletRequest;
+import java.util.List;
 
 /**
 * @author 30637
@@ -45,4 +47,23 @@ public interface UsersService extends IService<Users> {
       * @return
       */
     Users getLoginUser();
+    
+    /**
+     * 管理员获取用户列表
+     *
+     * @param role 角色过滤
+     * @return 用户列表
+     */
+    List<Users> listUsers(String role);
+    
+    /**
+     * 管理员创建管理员账号
+     *
+     * @param username 用户名
+     * @param password 密码
+     * @param email 邮箱
+     * @param phone 电话
+     * @return 创建的管理员用户
+     */
+    Users createAdmin(String username, String password, String email, String phone);
 }

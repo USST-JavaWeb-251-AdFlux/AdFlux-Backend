@@ -9,8 +9,8 @@ import java.io.Serializable;
 /**
  * 广告查询请求
  */
-@EqualsAndHashCode(callSuper = true)
 @Data
+@EqualsAndHashCode(callSuper = true)
 public class AdvertisementQueryRequest extends PageRequest implements Serializable {
 
     /**

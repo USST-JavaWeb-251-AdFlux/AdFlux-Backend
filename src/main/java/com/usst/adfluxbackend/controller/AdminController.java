@@ -1,16 +1,17 @@
 package com.usst.adfluxbackend.controller;
 
-import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.usst.adfluxbackend.common.BaseResponse;
 import com.usst.adfluxbackend.common.ResultUtils;
 import com.usst.adfluxbackend.model.dto.admin.AdReviewRequest;
+import com.usst.adfluxbackend.model.dto.admin.AdminCreateRequest;
 import com.usst.adfluxbackend.model.dto.admin.CategoryCreateRequest;
 import com.usst.adfluxbackend.model.entity.AdCategories;
-import com.usst.adfluxbackend.model.entity.Advertisements;
+import com.usst.adfluxbackend.model.entity.Users;
 import com.usst.adfluxbackend.model.vo.AdvertisementVO;
 import com.usst.adfluxbackend.model.vo.CategoryVO;
 import com.usst.adfluxbackend.service.AdCategoriesService;
 import com.usst.adfluxbackend.service.AdvertisementsService;
+import com.usst.adfluxbackend.service.UsersService;
 import org.springframework.beans.BeanUtils;
 import org.springframework.web.bind.annotation.*;
 
@@ -28,6 +29,9 @@ public class AdminController {
     @Resource
     private AdCategoriesService adCategoriesService;
     
+    @Resource
+    private UsersService usersService;
+    
     /**
      * 获取待审核广告列表
      *
@@ -37,11 +41,11 @@ public class AdminController {
      * @return 广告分页列表
      */
     @GetMapping("/ads")
-    public BaseResponse<IPage<AdvertisementVO>> listAdsForAdmin(
+    public BaseResponse<com.baomidou.mybatisplus.core.metadata.IPage<AdvertisementVO>> listAdsForAdmin(
             @RequestParam(required = false) Integer status,
             @RequestParam(required = false, defaultValue = "1") Integer current,
             @RequestParam(required = false, defaultValue = "10") Integer pageSize) {
-        IPage<AdvertisementVO> advertisementPage = advertisementsService.listAdsForAdmin(status, current, pageSize);
+        com.baomidou.mybatisplus.core.metadata.IPage<AdvertisementVO> advertisementPage = advertisementsService.listAdsForAdmin(status, current, pageSize);
         return ResultUtils.success(advertisementPage);
     }
     
@@ -88,5 +92,34 @@ public class AdminController {
         CategoryVO categoryVO = new CategoryVO();
         BeanUtils.copyProperties(category, categoryVO);
         return ResultUtils.success(categoryVO);
+    }
+    
+    /**
+     * 获取用户列表
+     *
+     * @param role 角色过滤：admin/advertiser/publisher
+     * @return 用户列表
+     */
+    @GetMapping("/users")
+    public BaseResponse<List<Users>> listUsers(@RequestParam(required = false) String role) {
+        List<Users> users = usersService.listUsers(role);
+        return ResultUtils.success(users);
+    }
+    
+    /**
+     * 创建管理员账号
+     *
+     * @param createRequest 创建管理员请求
+     * @return 新建管理员的用户信息
+     */
+    @PostMapping("/users")
+    public BaseResponse<Users> createAdmin(@RequestBody AdminCreateRequest createRequest) {
+        Users user = usersService.createAdmin(
+                createRequest.getUsername(),
+                createRequest.getPassword(),
+                createRequest.getEmail(),
+                createRequest.getPhone()
+        );
+        return ResultUtils.success(user);
     }
 }
