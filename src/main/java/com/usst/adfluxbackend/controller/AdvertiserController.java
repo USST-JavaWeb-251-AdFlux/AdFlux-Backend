@@ -109,16 +109,29 @@ public class AdvertiserController {
     /**
      * 分页获取当前广告主的广告列表
      *
-     * @param queryRequest 查询条件
+     * @param reviewStatus 审核状态：0-待审核；1-通过；2-拒绝
+     * @param isActive 是否启用：0-否；1-是
+     * @param page 页码，从 1 开始，默认 1
+     * @param pageSize 每页数量，默认 10
      * @return 广告分页列表
      */
     @GetMapping("/ads")
-    public BaseResponse<IPage<AdvertisementVO>> listAdvertisements(AdvertisementQueryRequest queryRequest) {
+    public BaseResponse<IPage<AdvertisementVO>> listAdvertisements(
+            @RequestParam(required = false) Integer reviewStatus,
+            @RequestParam(required = false) Integer isActive,
+            @RequestParam(required = false, defaultValue ="1") Integer page,
+            @RequestParam(required = false, defaultValue = "10") Integer pageSize) {
+        
+        AdvertisementQueryRequest queryRequest = new AdvertisementQueryRequest();
+        queryRequest.setReviewStatus(reviewStatus);
+        queryRequest.setIsActive(isActive);
+        queryRequest.setCurrent(page);
+        queryRequest.setPageSize(pageSize);
+        
         IPage<AdvertisementVO> advertisementPage = advertisementsService.listAdvertisementsByPage(queryRequest);
         return ResultUtils.success(advertisementPage);
     }
-    
-    /**
+/**
      * 创建新的广告
      *
      * @param createRequest 创建广告请求
@@ -199,7 +212,7 @@ public class AdvertiserController {
      *
      * @param adId 广告ID
      * @param queryRequest 查询条件
-     * @return 广告统计数据
+     * @return广告统计数据
      */
     @GetMapping("/ads/{adId}/statistics")
     public BaseResponse<AdvertisementStatisticsVO> getAdvertisementStatistics(@PathVariable Long adId,

@@ -78,4 +78,9 @@ public class Advertisements {
      * 广告版式（0-banner； 1-sidebar； 2-card）
      */
     private String adLayout;
+
+    /**
+     * 拒绝原因
+     */
+    String rejectReason;
 }

@@ -1,10 +1,13 @@
 package com.usst.adfluxbackend.service.impl;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.usst.adfluxbackend.context.BaseContext;
+import com.usst.adfluxbackend.exception.BusinessException;
+import com.usst.adfluxbackend.exception.ErrorCode;
 import com.usst.adfluxbackend.mapper.AdDisplaysMapper;
 import com.usst.adfluxbackend.mapper.AdvertisementsMapper;
 import com.usst.adfluxbackend.model.dto.ad.AdvertisementQueryRequest;
@@ -55,16 +58,16 @@ public class AdvertisementsServiceImpl extends ServiceImpl<AdvertisementsMapper,
         Page<Advertisements> page = new Page<>(queryRequest.getCurrent(), queryRequest.getPageSize());
         
         // 构造查询条件
-        com.baomidou.mybatisplus.core.conditions.query.QueryWrapper<Advertisements> queryWrapper = 
-                new com.baomidou.mybatisplus.core.conditions.query.QueryWrapper<>();
-        queryWrapper.eq("advertiser_id", currentAdvertiserId);
+        QueryWrapper<Advertisements> queryWrapper =
+                new QueryWrapper<>();
+        queryWrapper.eq("advertiserId", currentAdvertiserId);
         
         // 添加可选的筛选条件
         if (queryRequest.getReviewStatus() != null) {
-            queryWrapper.eq("review_status", queryRequest.getReviewStatus());
+            queryWrapper.eq("reviewStatus", queryRequest.getReviewStatus());
         }
         if (queryRequest.getIsActive() != null) {
-            queryWrapper.eq("is_active", queryRequest.getIsActive());
+            queryWrapper.eq("isActive", queryRequest.getIsActive());
         }
         
         // 执行分页查询
@@ -248,7 +251,7 @@ public class AdvertisementsServiceImpl extends ServiceImpl<AdvertisementsMapper,
         
         // 只有审核通过的广告才能切换状态
         if (!Objects.equals(advertisement.getReviewStatus(), 1)) {
-            return null;
+            throw new BusinessException(ErrorCode.PARAMS_ERROR, "广告未审核通过，无法切换状态");
         }
         
         // 更新状态
@@ -449,7 +452,8 @@ public class AdvertisementsServiceImpl extends ServiceImpl<AdvertisementsMapper,
         advertisement.setReviewStatus(reviewStatus);
         // 更新编辑时间
         advertisement.setEditTime(new Date());
-        // TODO: 可以在这里添加拒绝原因的处理逻辑
+        // 添加拒绝原因
+        advertisement.setRejectReason(reason);
         
         // 保存到数据库
         this.updateById(advertisement);
