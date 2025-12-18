@@ -8,6 +8,7 @@ import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.usst.adfluxbackend.context.BaseContext;
 import com.usst.adfluxbackend.exception.BusinessException;
 import com.usst.adfluxbackend.exception.ErrorCode;
+import com.usst.adfluxbackend.exception.ThrowUtils;
 import com.usst.adfluxbackend.mapper.AdDisplaysMapper;
 import com.usst.adfluxbackend.mapper.AdvertisementsMapper;
 import com.usst.adfluxbackend.model.dto.ad.AdvertisementQueryRequest;
@@ -90,41 +91,107 @@ public class AdvertisementsServiceImpl extends ServiceImpl<AdvertisementsMapper,
      * @param createRequest 创建广告请求
      * @return 创建的广告信息
      */
+//    @Override
+//    public AdvertisementVO createAdvertisement(CreateAdvertisementRequest createRequest) {
+//        Long currentAdvertiserId = BaseContext.getCurrentId();
+//
+//        // 构造广告实体
+//        Advertisements advertisement = new Advertisements();
+//        BeanUtils.copyProperties(createRequest, advertisement);
+//        advertisement.setAdvertiserId(currentAdvertiserId);
+//        // 设置初始状态：待审核，未启用
+//        advertisement.setReviewStatus(0);
+//        advertisement.setIsActive(0);
+//        // 设置创建和编辑时间
+//        Date now = new Date();
+//        advertisement.setCreateTime(now);
+//        advertisement.setEditTime(now);
+//
+//        // 保存到数据库
+//        this.save(advertisement);
+//
+//        // 转换为VO对象并返回
+//        AdvertisementVO advertisementVO = new AdvertisementVO();
+//        BeanUtils.copyProperties(advertisement, advertisementVO);
+//        return advertisementVO;
+//    }
     @Override
     public AdvertisementVO createAdvertisement(CreateAdvertisementRequest createRequest) {
-        Long currentAdvertiserId = BaseContext.getCurrentId();
 
-        // 构造广告实体
-        Advertisements advertisement = new Advertisements();
+        // ---------- 基础参数校验 ----------
+        ThrowUtils.throwIf(createRequest == null, ErrorCode.PARAMS_ERROR, "请求参数不能为空");
 
-        // 检验广告类型
-        String meadiaUrl = createRequest.getMediaUrl();
-        if (meadiaUrl.endsWith(".mp4")) {
-            advertisement.setAdType(1);
-        } else if (meadiaUrl.endsWith(".png") || meadiaUrl.endsWith(".jpg") || meadiaUrl.endsWith(".jpeg")) {
-            advertisement.setAdType(0);
-        } else {
-            throw new BusinessException(ErrorCode.PARAMS_ERROR, "不支持的广告类型");
+        // title：非空
+        String title = createRequest.getTitle();
+        ThrowUtils.throwIf(title == null || title.trim().isEmpty(),
+                ErrorCode.PARAMS_ERROR, "广告标题 title 不能为空");
+        title = title.trim();
+        ThrowUtils.throwIf(title.length() > 255,
+                ErrorCode.PARAMS_ERROR, "广告标题长度不能超过 255 字符");
+
+        // weeklyBudget：非空、非负、>=200
+        BigDecimal weeklyBudget = createRequest.getWeeklyBudget();
+        ThrowUtils.throwIf(weeklyBudget == null,
+                ErrorCode.PARAMS_ERROR, "周预算 weeklyBudget 不能为空");
+        ThrowUtils.throwIf(weeklyBudget.compareTo(BigDecimal.ZERO) < 0,
+                ErrorCode.PARAMS_ERROR, "周预算 weeklyBudget 不能为负数");
+        ThrowUtils.throwIf(weeklyBudget.compareTo(new BigDecimal("200")) < 0,
+                ErrorCode.PARAMS_ERROR, "周预算 weeklyBudget 最低为 200");
+
+        // adLayout：只能是 0 / 1 / 2
+        String adLayout = createRequest.getAdLayout();
+        ThrowUtils.throwIf(adLayout == null ||
+                        !(adLayout.equals("0") || adLayout.equals("1") || adLayout.equals("2")),
+                ErrorCode.PARAMS_ERROR, "广告版式 adLayout 只允许 0-banner / 1-sidebar / 2-card");
+
+        // adType：只能是 0 / 1
+        Integer adType = createRequest.getAdType();
+        ThrowUtils.throwIf(adType == null || !(adType == 0 || adType == 1),
+                ErrorCode.PARAMS_ERROR, "广告类型 adType 只允许 0-image 或 1-video");
+
+        // mediaUrl：非空
+        String mediaUrl = createRequest.getMediaUrl();
+        ThrowUtils.throwIf(mediaUrl == null || mediaUrl.trim().isEmpty(),
+                ErrorCode.PARAMS_ERROR, "广告素材 mediaUrl 不能为空");
+        mediaUrl = mediaUrl.trim();
+        ThrowUtils.throwIf(mediaUrl.length() > 512,
+                ErrorCode.PARAMS_ERROR, "广告素材 mediaUrl 长度不能超过 512");
+
+        // landingPage：可选，但如果存在必须是合法 URL
+        String landingPage = createRequest.getLandingPage();
+        if (landingPage != null && !landingPage.trim().isEmpty()) {
+            landingPage = landingPage.trim();
+            try {
+                new java.net.URL(landingPage);
+            } catch (Exception e) {
+                throw new BusinessException(ErrorCode.PARAMS_ERROR, "landingPage 不是合法的 URL");
+            }
+            ThrowUtils.throwIf(landingPage.length() > 512,
+                    ErrorCode.PARAMS_ERROR, "landingPage 长度不能超过 512");
         }
 
+        // categoryId：可选，但必须 > 0
+        Long categoryId = createRequest.getCategoryId();
+        ThrowUtils.throwIf(categoryId != null && categoryId <= 0,
+                ErrorCode.PARAMS_ERROR, "categoryId 必须为正数");
+
+        // ---------- 构造并保存广告 ----------
+        Long currentAdvertiserId = BaseContext.getCurrentId();
+        ThrowUtils.throwIf(currentAdvertiserId == null,
+                ErrorCode.NOT_LOGIN_ERROR, "未登录，无法创建广告");
+
+        Advertisements advertisement = new Advertisements();
         BeanUtils.copyProperties(createRequest, advertisement);
-        advertisement.setAdvertiserId(currentAdvertiserId);
-        // 设置初始状态：待审核，未启用
-        advertisement.setReviewStatus(0);
-        advertisement.setIsActive(0);
-        // 设置创建和编辑时间
-        Date now = new Date();
-        advertisement.setCreateTime(now);
-        advertisement.setEditTime(now);
-        
-        // 保存到数据库
+
+        // 覆盖关键字段（确保使用校验后的值）
+        fillAdvertisementForCreate(advertisement, createRequest, currentAdvertiserId);
         this.save(advertisement);
-        
-        // 转换为VO对象并返回
+
         AdvertisementVO advertisementVO = new AdvertisementVO();
         BeanUtils.copyProperties(advertisement, advertisementVO);
         return advertisementVO;
     }
+
 
     /**
      * 获取广告详情
@@ -179,14 +246,11 @@ public class AdvertisementsServiceImpl extends ServiceImpl<AdvertisementsMapper,
         if (StringUtils.hasText(updateRequest.getTitle())) {
             advertisement.setTitle(updateRequest.getTitle());
         }
+        if (updateRequest.getAdType() != null) {
+            advertisement.setAdType(updateRequest.getAdType());
+        }
         if (StringUtils.hasText(updateRequest.getMediaUrl())) {
             advertisement.setMediaUrl(updateRequest.getMediaUrl());
-        }
-        String mediaUrl = updateRequest.getMediaUrl();
-        if (mediaUrl.endsWith(".mp4")) {
-            advertisement.setAdType(1);
-        } else if (mediaUrl.endsWith(".png") || mediaUrl.endsWith(".jpg")) {
-            advertisement.setAdType(0);
         }
         if (StringUtils.hasText(updateRequest.getLandingPage())) {
             advertisement.setLandingPage(updateRequest.getLandingPage());
@@ -477,4 +541,26 @@ public class AdvertisementsServiceImpl extends ServiceImpl<AdvertisementsMapper,
         BeanUtils.copyProperties(advertisement, advertisementVO);
         return advertisementVO;
     }
+    private void fillAdvertisementForCreate(
+            Advertisements advertisement,
+            CreateAdvertisementRequest request,
+            Long advertiserId
+    ) {
+        advertisement.setTitle(request.getTitle());
+        advertisement.setWeeklyBudget(request.getWeeklyBudget());
+        advertisement.setAdLayout(request.getAdLayout());
+        advertisement.setAdType(request.getAdType());
+        advertisement.setMediaUrl(request.getMediaUrl());
+        advertisement.setLandingPage(request.getLandingPage());
+        advertisement.setCategoryId(request.getCategoryId());
+
+        advertisement.setAdvertiserId(advertiserId);
+        advertisement.setReviewStatus(0); // 待审核
+        advertisement.setIsActive(0);     // 默认不启用
+
+        Date now = new Date();
+        advertisement.setCreateTime(now);
+        advertisement.setEditTime(now);
+    }
+
 }
