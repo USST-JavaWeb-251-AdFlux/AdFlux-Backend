@@ -144,11 +144,6 @@ public class AdvertisementsServiceImpl extends ServiceImpl<AdvertisementsMapper,
                         !(adLayout.equals("0") || adLayout.equals("1") || adLayout.equals("2")),
                 ErrorCode.PARAMS_ERROR, "广告版式 adLayout 只允许 0-banner / 1-sidebar / 2-card");
 
-        // adType：只能是 0 / 1
-        Integer adType = createRequest.getAdType();
-        ThrowUtils.throwIf(adType == null || !(adType == 0 || adType == 1),
-                ErrorCode.PARAMS_ERROR, "广告类型 adType 只允许 0-image 或 1-video");
-
         // mediaUrl：非空
         String mediaUrl = createRequest.getMediaUrl();
         ThrowUtils.throwIf(mediaUrl == null || mediaUrl.trim().isEmpty(),
@@ -181,6 +176,15 @@ public class AdvertisementsServiceImpl extends ServiceImpl<AdvertisementsMapper,
                 ErrorCode.NOT_LOGIN_ERROR, "未登录，无法创建广告");
 
         Advertisements advertisement = new Advertisements();
+        // 检验广告类型
+        String meadiaUrl = createRequest.getMediaUrl();
+        if (meadiaUrl.endsWith(".mp4")) {
+            advertisement.setAdType(1);
+        } else if (meadiaUrl.endsWith(".png") || meadiaUrl.endsWith(".jpg") || meadiaUrl.endsWith(".jpeg")) {
+            advertisement.setAdType(0);
+        } else {
+            throw new BusinessException(ErrorCode.PARAMS_ERROR, "不支持的广告类型");
+        }
         BeanUtils.copyProperties(createRequest, advertisement);
 
         // 覆盖关键字段（确保使用校验后的值）
@@ -246,11 +250,14 @@ public class AdvertisementsServiceImpl extends ServiceImpl<AdvertisementsMapper,
         if (StringUtils.hasText(updateRequest.getTitle())) {
             advertisement.setTitle(updateRequest.getTitle());
         }
-        if (updateRequest.getAdType() != null) {
-            advertisement.setAdType(updateRequest.getAdType());
-        }
         if (StringUtils.hasText(updateRequest.getMediaUrl())) {
             advertisement.setMediaUrl(updateRequest.getMediaUrl());
+        }
+        String mediaUrl = updateRequest.getMediaUrl();
+        if (mediaUrl.endsWith(".mp4")) {
+            advertisement.setAdType(1);
+        } else if (mediaUrl.endsWith(".png") || mediaUrl.endsWith(".jpg")) {
+            advertisement.setAdType(0);
         }
         if (StringUtils.hasText(updateRequest.getLandingPage())) {
             advertisement.setLandingPage(updateRequest.getLandingPage());
@@ -549,7 +556,6 @@ public class AdvertisementsServiceImpl extends ServiceImpl<AdvertisementsMapper,
         advertisement.setTitle(request.getTitle());
         advertisement.setWeeklyBudget(request.getWeeklyBudget());
         advertisement.setAdLayout(request.getAdLayout());
-        advertisement.setAdType(request.getAdType());
         advertisement.setMediaUrl(request.getMediaUrl());
         advertisement.setLandingPage(request.getLandingPage());
         advertisement.setCategoryId(request.getCategoryId());

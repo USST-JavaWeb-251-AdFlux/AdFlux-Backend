@@ -16,10 +16,6 @@ public class UpdateAdvertisementRequest implements Serializable {
      */
     private String title;
 
-    /**
-     * 广告类型（0-image; 1-video）
-     */
-    private Integer adType;
 
     /**
      * 素材路径
