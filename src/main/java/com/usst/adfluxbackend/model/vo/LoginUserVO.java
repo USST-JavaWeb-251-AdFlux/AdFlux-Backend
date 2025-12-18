@@ -2,6 +2,7 @@ package com.usst.adfluxbackend.model.vo;
 
 import lombok.Data;
 
+import java.io.Serial;
 import java.io.Serializable;
 import java.util.Date;
 
@@ -27,5 +28,6 @@ public class LoginUserVO implements Serializable {
      */
     private String token;
 
+    @Serial
     private static final long serialVersionUID = 1L;
 }
