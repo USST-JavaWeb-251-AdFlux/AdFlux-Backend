@@ -65,22 +65,6 @@ public class AdminController {
     }
     
     /**
-     * 获取广告分类列表
-     *
-     * @return 广告分类列表
-     */
-    @GetMapping("/categories")
-    public BaseResponse<List<CategoryVO>> listAllCategories() {
-        List<AdCategories> categories = adCategoriesService.listAllCategories();
-        List<CategoryVO> categoryVOS = categories.stream().map(category -> {
-            CategoryVO vo = new CategoryVO();
-            BeanUtils.copyProperties(category, vo);
-            return vo;
-        }).collect(Collectors.toList());
-        return ResultUtils.success(categoryVOS);
-    }
-    
-    /**
      * 新增广告分类
      *
      * @param createRequest 创建分类请求
