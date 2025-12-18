@@ -17,6 +17,8 @@ spring:
     url: jdbc:mysql://${adflux.datasource.host}:${adflux.datasource.port}/${adflux.datasource.database}?serverTimezone=Asia/Shanghai&useUnicode=true&characterEncoding=utf-8&zeroDateTimeBehavior=convertToNull&useSSL=false&allowPublicKeyRetrieval=true
     username: ${adflux.datasource.username}
     password: ${adflux.datasource.password}
+    hikari:
+      keepalive-time: 180000
   # 开放更大的文件上传体积
   servlet:
     multipart:

@@ -93,9 +93,20 @@ public class AdvertisementsServiceImpl extends ServiceImpl<AdvertisementsMapper,
     @Override
     public AdvertisementVO createAdvertisement(CreateAdvertisementRequest createRequest) {
         Long currentAdvertiserId = BaseContext.getCurrentId();
-        
+
         // 构造广告实体
         Advertisements advertisement = new Advertisements();
+
+        // 检验广告类型
+        String meadiaUrl = createRequest.getMediaUrl();
+        if (meadiaUrl.endsWith(".mp4")) {
+            advertisement.setAdType(1);
+        } else if (meadiaUrl.endsWith(".png") || meadiaUrl.endsWith(".jpg") || meadiaUrl.endsWith(".jpeg")) {
+            advertisement.setAdType(0);
+        } else {
+            throw new BusinessException(ErrorCode.PARAMS_ERROR, "不支持的广告类型");
+        }
+
         BeanUtils.copyProperties(createRequest, advertisement);
         advertisement.setAdvertiserId(currentAdvertiserId);
         // 设置初始状态：待审核，未启用
@@ -168,11 +179,14 @@ public class AdvertisementsServiceImpl extends ServiceImpl<AdvertisementsMapper,
         if (StringUtils.hasText(updateRequest.getTitle())) {
             advertisement.setTitle(updateRequest.getTitle());
         }
-        if (updateRequest.getAdType() != null) {
-            advertisement.setAdType(updateRequest.getAdType());
-        }
         if (StringUtils.hasText(updateRequest.getMediaUrl())) {
             advertisement.setMediaUrl(updateRequest.getMediaUrl());
+        }
+        String mediaUrl = updateRequest.getMediaUrl();
+        if (mediaUrl.endsWith(".mp4")) {
+            advertisement.setAdType(1);
+        } else if (mediaUrl.endsWith(".png") || mediaUrl.endsWith(".jpg")) {
+            advertisement.setAdType(0);
         }
         if (StringUtils.hasText(updateRequest.getLandingPage())) {
             advertisement.setLandingPage(updateRequest.getLandingPage());
