@@ -7,11 +7,14 @@ import com.usst.adfluxbackend.model.dto.ad.*;
 import com.usst.adfluxbackend.model.dto.advertiser.AdvertiserAddRequest;
 import com.usst.adfluxbackend.model.dto.payment.PaymentMethodAddRequest;
 import com.usst.adfluxbackend.model.dto.statistic.DataOverviewQueryRequest;
+import com.usst.adfluxbackend.model.entity.AdCategories;
 import com.usst.adfluxbackend.model.entity.AdvertiserPayments;
 import com.usst.adfluxbackend.model.vo.*;
+import com.usst.adfluxbackend.service.AdCategoriesService;
 import com.usst.adfluxbackend.service.AdvertisersService;
 import com.usst.adfluxbackend.service.AdvertiserPaymentsService;
 import com.usst.adfluxbackend.service.AdvertisementsService;
+import org.springframework.beans.BeanUtils;
 import org.springframework.web.bind.annotation.*;
 
 import javax.annotation.Resource;
@@ -30,6 +33,9 @@ public class AdvertiserController {
     
     @Resource
     private AdvertisementsService advertisementsService;
+
+    @Resource
+    private AdCategoriesService adCategoriesService;
 
     /**
      * 获取广告主公司信息
@@ -219,5 +225,21 @@ public class AdvertiserController {
                                                                              DataOverviewQueryRequest queryRequest) {
         AdvertisementStatisticsVO statisticsVO = advertisementsService.getAdvertisementStatistics(adId, queryRequest);
         return ResultUtils.success(statisticsVO);
+    }
+
+    /**
+     * 获取广告分类列表
+     *
+     * @return 广告分类列表
+     */
+    @GetMapping("/categories")
+    public BaseResponse<List<CategoryVO>> listAllCategories() {
+        List<AdCategories> categories = adCategoriesService.listAllCategories();
+        List<CategoryVO> categoryVOS = categories.stream().map(category -> {
+            CategoryVO vo = new CategoryVO();
+            BeanUtils.copyProperties(category, vo);
+            return vo;
+        }).collect(Collectors.toList());
+        return ResultUtils.success(categoryVOS);
     }
 }

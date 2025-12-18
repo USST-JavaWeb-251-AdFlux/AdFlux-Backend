@@ -11,7 +11,7 @@ import java.io.Serializable;
 public class AdReviewRequest implements Serializable {
 
     /**
-     * 审核结果：1-通过；2-拒绝
+     * 审核结果：0-待审核；1-通过；2-拒绝
      */
     private Integer reviewStatus;
 

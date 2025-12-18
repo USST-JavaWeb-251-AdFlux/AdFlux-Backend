@@ -435,7 +435,7 @@ public class AdvertisementsServiceImpl extends ServiceImpl<AdvertisementsMapper,
      * 管理员审核广告
      *
      * @param adId 广告ID
-     * @param reviewStatus 审核状态：1-通过；2-拒绝
+     * @param reviewStatus 审核状态：0-待审核；1-通过；2-拒绝
      * @param reason 拒绝原因
      * @return 更新后的广告信息
      */

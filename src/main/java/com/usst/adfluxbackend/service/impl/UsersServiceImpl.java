@@ -3,6 +3,7 @@ package com.usst.adfluxbackend.service.impl;
 import cn.hutool.core.bean.BeanUtil;
 import cn.hutool.core.util.StrUtil;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
+import com.baomidou.mybatisplus.core.toolkit.StringUtils;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.usst.adfluxbackend.context.BaseContext;
 import com.usst.adfluxbackend.exception.BusinessException;
@@ -71,8 +72,8 @@ public class UsersServiceImpl extends ServiceImpl<UsersMapper, Users>
         }
         String username = userRegisterRequest.getUsername();
         String userPassword = userRegisterRequest.getUserPassword();
-        if (username.length() < 4) {
-            throw new BusinessException(ErrorCode.PARAMS_ERROR, "用户名过短");
+        if (StringUtils.isBlank(username) || username.length() < 4) {
+            throw new BusinessException(ErrorCode.PARAMS_ERROR, "用户名过短/用户名为空");
         }
         if (userPassword.length() < 8) {
             throw new BusinessException(ErrorCode.PARAMS_ERROR, "用户密码过短");
@@ -105,7 +106,7 @@ public class UsersServiceImpl extends ServiceImpl<UsersMapper, Users>
         boolean saveResult = this.save(user);
         if (!saveResult) {
             throw new BusinessException(ErrorCode.SYSTEM_ERROR, "注册失败，数据库错误");
-}
+        }
         return user.getUserId();
     }
 
@@ -132,7 +133,7 @@ public class UsersServiceImpl extends ServiceImpl<UsersMapper, Users>
         // 4. 保存用户的登录态 用于判断用户是否登录
         Map<String, Object> jwtClaims = new HashMap<>();
         jwtClaims.put("userId", user.getUserId());
-jwtClaims.put("username", username);
+        jwtClaims.put("username", username);
         jwtClaims.put("userRole", user.getUserRole());
         // 生成token
         String token = jwtUtils.generateToken(jwtClaims);
