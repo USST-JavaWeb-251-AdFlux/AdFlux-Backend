@@ -42,5 +42,10 @@ public class UpdateAdvertisementRequest implements Serializable {
      */
     private BigDecimal weeklyBudget;
 
+    /**
+     * 广告类型（0-图文； 1-视频）
+     */
+    private Integer adType;
+
     private static final long serialVersionUID = 1L;
 }
