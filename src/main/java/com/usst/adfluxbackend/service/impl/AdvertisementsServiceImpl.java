@@ -176,15 +176,6 @@ public class AdvertisementsServiceImpl extends ServiceImpl<AdvertisementsMapper,
                 ErrorCode.NOT_LOGIN_ERROR, "未登录，无法创建广告");
 
         Advertisements advertisement = new Advertisements();
-        // 检验广告类型
-        String meadiaUrl = createRequest.getMediaUrl();
-        if (meadiaUrl.endsWith(".mp4")) {
-            advertisement.setAdType(1);
-        } else if (meadiaUrl.endsWith(".png") || meadiaUrl.endsWith(".jpg") || meadiaUrl.endsWith(".jpeg")) {
-            advertisement.setAdType(0);
-        } else {
-            throw new BusinessException(ErrorCode.PARAMS_ERROR, "不支持的广告类型");
-        }
         BeanUtils.copyProperties(createRequest, advertisement);
 
         // 覆盖关键字段（确保使用校验后的值）
@@ -253,11 +244,8 @@ public class AdvertisementsServiceImpl extends ServiceImpl<AdvertisementsMapper,
         if (StringUtils.hasText(updateRequest.getMediaUrl())) {
             advertisement.setMediaUrl(updateRequest.getMediaUrl());
         }
-        String mediaUrl = updateRequest.getMediaUrl();
-        if (mediaUrl.endsWith(".mp4")) {
-            advertisement.setAdType(1);
-        } else if (mediaUrl.endsWith(".png") || mediaUrl.endsWith(".jpg")) {
-            advertisement.setAdType(0);
+        if(updateRequest.getAdType() != null){
+            advertisement.setAdType(updateRequest.getAdType());
         }
         if (StringUtils.hasText(updateRequest.getLandingPage())) {
             advertisement.setLandingPage(updateRequest.getLandingPage());
