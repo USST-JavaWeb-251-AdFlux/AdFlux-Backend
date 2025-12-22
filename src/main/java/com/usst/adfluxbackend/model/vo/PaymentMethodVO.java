@@ -1,5 +1,7 @@
 package com.usst.adfluxbackend.model.vo;
 
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
+import com.fasterxml.jackson.databind.ser.std.ToStringSerializer;
 import lombok.Data;
 
 import java.io.Serializable;
@@ -13,6 +15,7 @@ public class PaymentMethodVO implements Serializable {
     /**
      * 支付信息 ID
      */
+    @JsonSerialize(using = ToStringSerializer.class)
     private Long paymentId;
 
     /**
