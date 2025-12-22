@@ -53,7 +53,7 @@ public interface AdvertisementsService extends IService<Advertisements> {
     AdvertisementVO updateAdvertisement(Long adId, UpdateAdvertisementRequest updateRequest);
 
     /**
-     * 逻辑删除广告
+     *物理删除广告
      *
      * @param adId 广告ID
      * @return 是否删除成功
