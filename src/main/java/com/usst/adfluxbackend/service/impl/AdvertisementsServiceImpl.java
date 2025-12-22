@@ -274,8 +274,8 @@ public class AdvertisementsServiceImpl extends ServiceImpl<AdvertisementsMapper,
         return advertisementVO;
     }
 
-    /**
-     * 逻辑删除广告
+/**
+     *物理删除广告
      *
      * @param adId 广告ID
      * @return 是否删除成功
@@ -292,12 +292,11 @@ public class AdvertisementsServiceImpl extends ServiceImpl<AdvertisementsMapper,
         );
         
         if (advertisement == null) {
-            return false;
+            throw new BusinessException(ErrorCode.NOT_FOUND_ERROR, "广告不存在或只能删除自己上传的广告");
         }
         
-        // 逻辑删除：将isActive置为0
-        advertisement.setIsActive(0);
-        return this.updateById(advertisement);
+        //物理删除
+        return this.removeById(advertisement.getAdId());
     }
 
     /**
