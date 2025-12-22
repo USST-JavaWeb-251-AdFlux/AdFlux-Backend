@@ -1,5 +1,7 @@
 package com.usst.adfluxbackend.model.vo;
 
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
+import com.fasterxml.jackson.databind.ser.std.ToStringSerializer;
 import lombok.Data;
 
 import java.io.Serializable;
@@ -13,11 +15,13 @@ public class AdvertiserProfileVO implements Serializable {
     /**
      * 广告业主 ID，对应 advertiserId
      */
+    @JsonSerialize(using = ToStringSerializer.class)
     private Long advertiserId;
 
     /**
      * 对应 users.userId
      */
+    @JsonSerialize(using = ToStringSerializer.class)
     private Long userId;
 
     /**

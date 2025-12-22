@@ -1,5 +1,7 @@
 package com.usst.adfluxbackend.model.vo;
 
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
+import com.fasterxml.jackson.databind.ser.std.ToStringSerializer;
 import lombok.Data;
 
 import java.io.Serializable;
@@ -14,6 +16,7 @@ public class CategoryVO implements Serializable {
     /**
      * 广告类别 ID
      */
+    @JsonSerialize(using = ToStringSerializer.class)
     private Long categoryId;
 
     /**
