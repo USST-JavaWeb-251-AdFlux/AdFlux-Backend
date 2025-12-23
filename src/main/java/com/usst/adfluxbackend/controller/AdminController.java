@@ -8,6 +8,7 @@ import com.usst.adfluxbackend.model.dto.admin.AdminCreateRequest;
 import com.usst.adfluxbackend.model.dto.admin.CategoryCreateRequest;
 import com.usst.adfluxbackend.model.entity.AdCategories;
 import com.usst.adfluxbackend.model.entity.Users;
+import com.usst.adfluxbackend.model.vo.AdvertisementReviewVO;
 import com.usst.adfluxbackend.model.vo.AdvertisementVO;
 import com.usst.adfluxbackend.model.vo.CategoryVO;
 import com.usst.adfluxbackend.model.vo.UsersVO;
@@ -58,14 +59,22 @@ public class AdminController {
      * @param reviewRequest 审核请求
      * @return 更新后的广告详情
      */
+//    @PutMapping("/ads/{adId}/review")
+//    public BaseResponse<AdvertisementVO> reviewAdvertisement(@PathVariable Long adId,
+//                                                           @RequestBody AdReviewRequest reviewRequest) {
+//        AdvertisementVO advertisementVO = advertisementsService.reviewAdvertisement(
+//                adId, reviewRequest.getReviewStatus(), reviewRequest.getReason());
+//        return ResultUtils.success(advertisementVO);
+//    }
     @PutMapping("/ads/{adId}/review")
-    public BaseResponse<AdvertisementVO> reviewAdvertisement(@PathVariable Long adId,
-                                                           @RequestBody AdReviewRequest reviewRequest) {
-        AdvertisementVO advertisementVO = advertisementsService.reviewAdvertisement(
+    public BaseResponse<AdvertisementReviewVO> reviewAdvertisement(@PathVariable Long adId,
+            @RequestBody AdReviewRequest reviewRequest) {
+        AdvertisementReviewVO reviewVO = advertisementsService.reviewAdvertisement(
                 adId, reviewRequest.getReviewStatus(), reviewRequest.getReason());
-        return ResultUtils.success(advertisementVO);
+        return ResultUtils.success(reviewVO);
     }
-    
+
+
     /**
      * 新增广告分类
      *

@@ -8,6 +8,7 @@ import com.usst.adfluxbackend.model.dto.ad.UpdateAdvertisementRequest;
 import com.usst.adfluxbackend.model.dto.ad.ToggleAdStatusRequest;
 import com.usst.adfluxbackend.model.dto.statistic.DataOverviewQueryRequest;
 import com.usst.adfluxbackend.model.entity.Advertisements;
+import com.usst.adfluxbackend.model.vo.AdvertisementReviewVO;
 import com.usst.adfluxbackend.model.vo.AdvertisementStatisticsVO;
 import com.usst.adfluxbackend.model.vo.AdvertisementVO;
 import com.usst.adfluxbackend.model.vo.DataOverviewVO;
@@ -104,5 +105,5 @@ public interface AdvertisementsService extends IService<Advertisements> {
      * @param reason 拒绝原因
      * @return 更新后的广告信息
      */
-    AdvertisementVO reviewAdvertisement(Long adId, Integer reviewStatus, String reason);
+    AdvertisementReviewVO reviewAdvertisement(Long adId, Integer reviewStatus, String reason);
 }
