@@ -90,11 +90,11 @@ public interface AdvertisementsService extends IService<Advertisements> {
      * 管理员分页查询广告列表（可按审核状态筛选）
      *
      * @param status 审核状态
-     * @param current 页码
+     * @param page 页码
      * @param pageSize 每页数量
      * @return 广告分页列表
      */
-    IPage<AdvertisementVO> listAdsForAdmin(Integer status, Integer current, Integer pageSize);
+    IPage<AdvertisementVO> listAdsForAdmin(Integer status, Integer page, Integer pageSize);
     
     /**
      * 管理员审核广告

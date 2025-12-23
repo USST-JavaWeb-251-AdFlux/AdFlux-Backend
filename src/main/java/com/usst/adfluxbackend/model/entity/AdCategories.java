@@ -16,6 +16,7 @@ public class AdCategories {
     /**
      * 广告类别 ID
      */
+    @TableId(type = IdType.ASSIGN_ID)
     private Long categoryId;
 
     /**

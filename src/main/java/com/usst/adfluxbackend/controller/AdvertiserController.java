@@ -49,7 +49,7 @@ public class AdvertiserController {
     }
 
     /**
-     * 更新广告主公司名称
+     * 添加广告主公司名称
      *
      * @param addRequest 更新请求
      * @return 是否添加成功
@@ -131,7 +131,7 @@ public class AdvertiserController {
         AdvertisementQueryRequest queryRequest = new AdvertisementQueryRequest();
         queryRequest.setReviewStatus(reviewStatus);
         queryRequest.setIsActive(isActive);
-        queryRequest.setCurrent(page);
+        queryRequest.setPage(page);
         queryRequest.setPageSize(pageSize);
         
         IPage<AdvertisementVO> advertisementPage = advertisementsService.listAdvertisementsByPage(queryRequest);

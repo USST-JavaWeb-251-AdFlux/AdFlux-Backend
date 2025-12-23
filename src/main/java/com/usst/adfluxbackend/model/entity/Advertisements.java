@@ -1,5 +1,6 @@
 package com.usst.adfluxbackend.model.entity;
 
+import com.baomidou.mybatisplus.annotation.IdType;
 import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableName;
 import java.math.BigDecimal;
@@ -16,7 +17,7 @@ public class Advertisements {
     /**
      * 广告 ID
      */
-    @TableId
+    @TableId(type = IdType.ASSIGN_ID)
     private Long adId;
 
     /**
