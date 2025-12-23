@@ -76,5 +76,11 @@ public class AdvertisementVO implements Serializable {
      */
     private Date editTime;
 
+    /**
+     * 拒绝原因
+     */
+    private String rejectReason;
+
+
     private static final long serialVersionUID = 1L;
 }
