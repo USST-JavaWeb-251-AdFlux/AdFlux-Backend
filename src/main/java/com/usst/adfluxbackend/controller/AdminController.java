@@ -68,7 +68,7 @@ public class AdminController {
 //    }
     @PutMapping("/ads/{adId}/review")
     public BaseResponse<AdvertisementReviewVO> reviewAdvertisement(@PathVariable Long adId,
-            @RequestBody AdReviewRequest reviewRequest){
+            @RequestBody AdReviewRequest reviewRequest) {
         AdvertisementReviewVO reviewVO = advertisementsService.reviewAdvertisement(
                 adId, reviewRequest.getReviewStatus(), reviewRequest.getReason());
         return ResultUtils.success(reviewVO);
