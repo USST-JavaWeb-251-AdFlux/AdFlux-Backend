@@ -18,10 +18,7 @@ import com.usst.adfluxbackend.model.dto.ad.ToggleAdStatusRequest;
 import com.usst.adfluxbackend.model.dto.statistic.DataOverviewQueryRequest;
 import com.usst.adfluxbackend.model.entity.AdDisplays;
 import com.usst.adfluxbackend.model.entity.Advertisements;
-import com.usst.adfluxbackend.model.vo.AdvertisementStatisticsVO;
-import com.usst.adfluxbackend.model.vo.AdvertisementVO;
-import com.usst.adfluxbackend.model.vo.DailyStatisticsVO;
-import com.usst.adfluxbackend.model.vo.DataOverviewVO;
+import com.usst.adfluxbackend.model.vo.*;
 import com.usst.adfluxbackend.service.AdvertisementsService;
 import org.springframework.beans.BeanUtils;
 import org.springframework.stereotype.Service;
@@ -562,30 +559,58 @@ public class AdvertisementsServiceImpl extends ServiceImpl<AdvertisementsMapper,
      * @param reason 拒绝原因
      * @return 更新后的广告信息
      */
+//    @Override
+//    public AdvertisementVO reviewAdvertisement(Long adId, Integer reviewStatus, String reason) {
+//        // 查询广告详情
+//        Advertisements advertisement = this.getById(adId);
+//
+//        if (advertisement == null) {
+//            throw new BusinessException(ErrorCode.NOT_FOUND_ERROR, "广告不存在");
+//        }
+//
+//        // 更新审核状态
+//        advertisement.setReviewStatus(reviewStatus);
+//        // 更新编辑时间
+//        advertisement.setEditTime(new Date());
+//        // 添加拒绝原因
+//        advertisement.setRejectReason(reason);
+//
+//        // 保存到数据库
+//        this.updateById(advertisement);
+//
+//        // 转换为VO对象并返回
+//        AdvertisementVO advertisementVO = new AdvertisementVO();
+//        BeanUtils.copyProperties(advertisement, advertisementVO);
+//        return advertisementVO;
+//    }
     @Override
-    public AdvertisementVO reviewAdvertisement(Long adId, Integer reviewStatus, String reason) {
-        // 查询广告详情
+    public AdvertisementReviewVO reviewAdvertisement(Long adId, Integer reviewStatus, String reason) {
+
         Advertisements advertisement = this.getById(adId);
-        
         if (advertisement == null) {
             throw new BusinessException(ErrorCode.NOT_FOUND_ERROR, "广告不存在");
         }
-        
-        // 更新审核状态
+
         advertisement.setReviewStatus(reviewStatus);
-        // 更新编辑时间
         advertisement.setEditTime(new Date());
-        // 添加拒绝原因
-        advertisement.setRejectReason(reason);
-        
-        // 保存到数据库
+
+        if (reviewStatus == 2) {
+            advertisement.setRejectReason(reason);
+        } else {
+            advertisement.setRejectReason(null);
+        }
+
         this.updateById(advertisement);
-        
-        // 转换为VO对象并返回
-        AdvertisementVO advertisementVO = new AdvertisementVO();
-        BeanUtils.copyProperties(advertisement, advertisementVO);
-        return advertisementVO;
+
+        AdvertisementReviewVO vo = new AdvertisementReviewVO();
+        vo.setAdId(advertisement.getAdId());
+        vo.setReviewStatus(advertisement.getReviewStatus());
+        vo.setRejectReason(advertisement.getRejectReason());
+        vo.setEditTime(advertisement.getEditTime());
+
+        return vo;
     }
+
     private void fillAdvertisementForCreate(
             Advertisements advertisement,
             CreateAdvertisementRequest request,

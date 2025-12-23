@@ -232,14 +232,14 @@ public class AdvertiserController {
      *
      * @return 广告分类列表
      */
-    @GetMapping("/categories")
-    public BaseResponse<List<CategoryVO>> listAllCategories() {
-        List<AdCategories> categories = adCategoriesService.listAllCategories();
-        List<CategoryVO> categoryVOS = categories.stream().map(category -> {
-            CategoryVO vo = new CategoryVO();
-            BeanUtils.copyProperties(category, vo);
-            return vo;
-        }).collect(Collectors.toList());
-        return ResultUtils.success(categoryVOS);
-    }
+//    @GetMapping("/categories")
+//    public BaseResponse<List<CategoryVO>> listAllCategories() {
+//        List<AdCategories> categories = adCategoriesService.listAllCategories();
+//        List<CategoryVO> categoryVOS = categories.stream().map(category -> {
+//            CategoryVO vo = new CategoryVO();
+//            BeanUtils.copyProperties(category, vo);
+//            return vo;
+//        }).collect(Collectors.toList());
+//        return ResultUtils.success(categoryVOS);
+//    }
 }
