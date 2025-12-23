@@ -25,7 +25,7 @@ public class WebMvcConfiguration implements WebMvcConfigurer {
     @Override
     public void addInterceptors(InterceptorRegistry registry) {
         // 计算资源映射的排除路径
-        // 确保 accessPrefix 是以 "/" 结尾的，这样拼接 "**"
+        // 确保 accessPrefix 是以 "/" 结尾的，这样拼接 "**" 即 "/ad-resource/**"
         String resourceExclusion = accessPrefix.endsWith("/") ? accessPrefix + "**" : accessPrefix + "/**";
 
         registry.addInterceptor(jwtTokenInterceptor)
@@ -45,17 +45,17 @@ public class WebMvcConfiguration implements WebMvcConfigurer {
 
     @Override
     public void addResourceHandlers(ResourceHandlerRegistry registry) {
-        // 2. 处理 URL 匹配模式
+        // 2. 处理 URL 匹配模式 即 "ad-resource/**"
         String pathPattern = accessPrefix.endsWith("/") ? accessPrefix + "**" : accessPrefix + "/**";
 
         // 3. 处理本地磁盘路径 (自动补全 file: 和 /)
-        String localPath = uploadPath;
-        // 如果不是 file: 开头，加上它
+        String localPath = uploadPath; // D:/data/ad-files/
+        // 如果不是 file: 开头，加上它 即 file:D:/data/ad-files/
         if (!localPath.startsWith("file:")) {
             localPath = "file:" + localPath;
         }
         // 如果末尾没有斜杠，加上它
-        if (!localPath.endsWith("/") && !localPath.endsWith(File.separator)) {
+        if (!localPath.endsWith("/")) {
             localPath = localPath + "/";
         }
 

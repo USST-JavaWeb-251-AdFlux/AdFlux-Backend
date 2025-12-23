@@ -76,10 +76,8 @@ public class FileServiceImpl implements IFileService {
 
             // 4. 正式存储逻辑
             String finalFileName = fileHash + suffix;
-            SimpleDateFormat sdf = new SimpleDateFormat("yyyy/MM/dd/");
-            String datePath = sdf.format(new Date());
 
-            File destDir = new File(uploadPath + datePath);
+            File destDir = new File(uploadPath);
             if (!destDir.exists()) destDir.mkdirs();
             File finalDestFile = new File(destDir, finalFileName);
 
@@ -93,7 +91,7 @@ public class FileServiceImpl implements IFileService {
             }
 
             // 5. 封装返回对象 VO
-            String fullUrl = accessPrefix + datePath + finalFileName;
+            String fullUrl = accessPrefix + finalFileName;
 
             FileVO fileVO = new FileVO();
             fileVO.setMediaUrl(fullUrl);
