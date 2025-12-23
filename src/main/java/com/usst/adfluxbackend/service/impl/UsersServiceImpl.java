@@ -13,11 +13,13 @@ import com.usst.adfluxbackend.model.dto.user.UserRegisterRequest;
 import com.usst.adfluxbackend.model.entity.Users;
 import com.usst.adfluxbackend.model.enums.UserRoleEnum;
 import com.usst.adfluxbackend.model.vo.LoginUserVO;
+import com.usst.adfluxbackend.model.vo.UsersVO;
 import com.usst.adfluxbackend.service.UsersService;
 import com.usst.adfluxbackend.mapper.UsersMapper;
 import com.usst.adfluxbackend.utils.JwtUtils;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
@@ -164,12 +166,20 @@ public class UsersServiceImpl extends ServiceImpl<UsersMapper, Users>
      * @return 用户列表
      */
     @Override
-    public List<Users> listUsers(String role) {
+    public List<UsersVO> listUsers(String role) {
         QueryWrapper<Users> queryWrapper = new QueryWrapper<>();
         if(role != null && !role.isEmpty()) {
             queryWrapper.eq("userRole", role);
         }
-        return this.list(queryWrapper);
+        List<Users> users = this.list(queryWrapper);
+        // 法一： stream 单独转换
+//        return users.stream().map(user -> {
+////            UsersVO usersVO = new UsersVO();
+////            BeanUtils.copyProperties(user, usersVO);
+////            return usersVO;
+////        }).toList();
+        // 法二：直接使用 hutool工具 api
+        return BeanUtil.copyToList(users, UsersVO.class);
     }
     
     /**

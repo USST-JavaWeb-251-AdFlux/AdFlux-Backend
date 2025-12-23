@@ -5,6 +5,7 @@ import com.usst.adfluxbackend.model.dto.user.UserRegisterRequest;
 import com.usst.adfluxbackend.model.entity.Users;
 import com.baomidou.mybatisplus.extension.service.IService;
 import com.usst.adfluxbackend.model.vo.LoginUserVO;
+import com.usst.adfluxbackend.model.vo.UsersVO;
 
 import javax.servlet.http.HttpServletRequest;
 import java.util.List;
@@ -54,7 +55,7 @@ public interface UsersService extends IService<Users> {
      * @param role 角色过滤
      * @return 用户列表
      */
-    List<Users> listUsers(String role);
+    List<UsersVO> listUsers(String role);
     
     /**
      * 管理员创建管理员账号

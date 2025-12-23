@@ -1,5 +1,6 @@
 package com.usst.adfluxbackend.controller;
 
+import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.usst.adfluxbackend.common.BaseResponse;
 import com.usst.adfluxbackend.common.ResultUtils;
 import com.usst.adfluxbackend.model.dto.admin.AdReviewRequest;
@@ -9,6 +10,7 @@ import com.usst.adfluxbackend.model.entity.AdCategories;
 import com.usst.adfluxbackend.model.entity.Users;
 import com.usst.adfluxbackend.model.vo.AdvertisementVO;
 import com.usst.adfluxbackend.model.vo.CategoryVO;
+import com.usst.adfluxbackend.model.vo.UsersVO;
 import com.usst.adfluxbackend.service.AdCategoriesService;
 import com.usst.adfluxbackend.service.AdvertisementsService;
 import com.usst.adfluxbackend.service.UsersService;
@@ -36,16 +38,16 @@ public class AdminController {
      * 获取待审核广告列表
      *
      * @param status 审核状态，默认为 0（待审核）
-     * @param current 页码
+     * @param page 页码
      * @param pageSize 每页数量
      * @return 广告分页列表
      */
     @GetMapping("/ads")
-    public BaseResponse<com.baomidou.mybatisplus.core.metadata.IPage<AdvertisementVO>> listAdsForAdmin(
+    public BaseResponse<IPage<AdvertisementVO>> listAdsForAdmin(
             @RequestParam(required = false) Integer status,
-            @RequestParam(required = false, defaultValue = "1") Integer current,
+            @RequestParam(required = false, defaultValue = "1") Integer page,
             @RequestParam(required = false, defaultValue = "10") Integer pageSize) {
-        com.baomidou.mybatisplus.core.metadata.IPage<AdvertisementVO> advertisementPage = advertisementsService.listAdsForAdmin(status, current, pageSize);
+        IPage<AdvertisementVO> advertisementPage = advertisementsService.listAdsForAdmin(status, page, pageSize);
         return ResultUtils.success(advertisementPage);
     }
     
@@ -85,8 +87,8 @@ public class AdminController {
      * @return 用户列表
      */
     @GetMapping("/users")
-    public BaseResponse<List<Users>> listUsers(@RequestParam(required = false) String role) {
-        List<Users> users = usersService.listUsers(role);
+    public BaseResponse<List<UsersVO>> listUsers(@RequestParam(required = false) String role) {
+        List<UsersVO> users = usersService.listUsers(role);
         return ResultUtils.success(users);
     }
     

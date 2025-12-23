@@ -56,7 +56,7 @@ public class AdvertisementsServiceImpl extends ServiceImpl<AdvertisementsMapper,
         Long currentAdvertiserId = BaseContext.getCurrentId();
         
         // 构造分页对象
-        Page<Advertisements> page = new Page<>(queryRequest.getCurrent(), queryRequest.getPageSize());
+        Page<Advertisements> page = new Page<>(queryRequest.getPage(), queryRequest.getPageSize());
         
         // 构造查询条件
         QueryWrapper<Advertisements> queryWrapper =
@@ -471,26 +471,26 @@ public class AdvertisementsServiceImpl extends ServiceImpl<AdvertisementsMapper,
      * 管理员分页查询广告列表（可按审核状态筛选）
      *
      * @param status 审核状态
-     * @param current 页码
+     * @param page 页码
      * @param pageSize 每页数量
      * @return 广告分页列表
      */
     @Override
-    public IPage<AdvertisementVO> listAdsForAdmin(Integer status, Integer current, Integer pageSize) {
+    public IPage<AdvertisementVO> listAdsForAdmin(Integer status, Integer page, Integer pageSize) {
         // 默认查询待审核广告
         if (status == null) {
             status = 0;
         }
         
         // 构造分页对象
-        Page<Advertisements> page = new Page<>(current != null ? current : 1, pageSize != null ? pageSize : 10);
+        Page<Advertisements> pages = new Page<>(page != null ? page : 1, pageSize != null ? pageSize : 10);
         
         // 构造查询条件
         LambdaQueryWrapper<Advertisements> queryWrapper = new LambdaQueryWrapper<>();
         queryWrapper.eq(Advertisements::getReviewStatus, status);
         
         // 执行分页查询
-        IPage<Advertisements> advertisementPage = this.page(page, queryWrapper);
+        IPage<Advertisements> advertisementPage = this.page(pages, queryWrapper);
         
         // 转换为VO对象
         Page<AdvertisementVO> voPage = new Page<>(advertisementPage.getCurrent(), advertisementPage.getSize(), advertisementPage.getTotal());
@@ -517,7 +517,7 @@ public class AdvertisementsServiceImpl extends ServiceImpl<AdvertisementsMapper,
         Advertisements advertisement = this.getById(adId);
         
         if (advertisement == null) {
-            return null;
+            throw new BusinessException(ErrorCode.NOT_FOUND_ERROR, "广告不存在");
         }
         
         // 更新审核状态
