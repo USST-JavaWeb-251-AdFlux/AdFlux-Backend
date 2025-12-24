@@ -391,6 +391,7 @@ public class AdvertisementsServiceImpl extends ServiceImpl<AdvertisementsMapper,
      * @param queryRequest 查询条件
      * @return 广告统计数据
      */
+
     @Override
     public AdvertisementStatisticsVO getAdvertisementStatistics(Long adId, DataOverviewQueryRequest queryRequest) {
         Long currentAdvertiserId = BaseContext.getCurrentId();
