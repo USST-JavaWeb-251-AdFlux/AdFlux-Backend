@@ -19,8 +19,7 @@ import java.util.UUID;
 * @createDate 2025-12-14 10:53:24
 */
 @Service
-public class PublishersServiceImpl extends ServiceImpl<PublishersMapper, Publishers>
-    implements PublishersService{
+public class PublishersServiceImpl extends ServiceImpl<PublishersMapper, Publishers> implements PublishersService{
 
     /**
      * 获取当前站长名下的网站列表
@@ -34,6 +33,22 @@ public class PublishersServiceImpl extends ServiceImpl<PublishersMapper, Publish
                 .eq(Publishers::getPublisherId, currentPublisherId));
     }
 
+    @Override
+    public Publishers getSiteById(Long websiteId) {
+        if (websiteId == null) {
+            return null;
+        }
+        Publishers site = this.getById(websiteId); // 根据主键查
+        if (site == null) {
+            return null;
+        }
+        // 仅允许当前登录的 publisher 查看自己的网站
+        Long currentPublisherId = BaseContext.getCurrentId();
+        if (currentPublisherId == null || !currentPublisherId.equals(site.getPublisherId())) {
+            return null; // 返回 null 表示不存在或无权限
+        }
+        return site;
+    }
     /**
      * 创建新网站
      *

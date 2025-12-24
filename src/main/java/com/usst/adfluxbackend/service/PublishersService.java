@@ -20,6 +20,14 @@ public interface PublishersService extends IService<Publishers> {
     List<Publishers> listSites();
 
     /**
+     * 根据 websiteId 查询网站（只返回当前登录站长自己的记录）
+     *
+     * @param websiteId 网站 ID
+     * @return Publishers 或 null（不存在或无权限）
+     */
+    Publishers getSiteById(Long websiteId);
+
+    /**
      * 创建新网站
      *
      * @param websiteName 网站名称

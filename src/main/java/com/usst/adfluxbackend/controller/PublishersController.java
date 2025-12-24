@@ -2,6 +2,8 @@ package com.usst.adfluxbackend.controller;
 
 import com.usst.adfluxbackend.common.BaseResponse;
 import com.usst.adfluxbackend.common.ResultUtils;
+import com.usst.adfluxbackend.exception.ErrorCode;
+import com.usst.adfluxbackend.exception.ThrowUtils;
 import com.usst.adfluxbackend.model.dto.publisher.CreateAdSlotRequest;
 import com.usst.adfluxbackend.model.dto.publisher.UpdateAdSlotRequest;
 import com.usst.adfluxbackend.model.dto.publisher.CreateSiteRequest;
@@ -44,6 +46,19 @@ public class PublishersController {
             return vo;
         }).collect(Collectors.toList());
         return ResultUtils.success(siteVOS);
+    }
+    /**
+     * 根据id 获取我的网站列表
+     *
+     * @return 网站列表
+     */
+    @GetMapping("/sites/{websiteId}")
+    public BaseResponse<PublisherSiteVO> getSiteDetail(@PathVariable Long websiteId) {
+        Publishers site = publishersService.getSiteById(websiteId);
+        ThrowUtils.throwIf(site == null, ErrorCode.NOT_FOUND_ERROR, "站点不存在或无权限访问");
+        PublisherSiteVO siteVO = new PublisherSiteVO();
+        BeanUtils.copyProperties(site, siteVO);
+        return ResultUtils.success(siteVO);
     }
     
     /**
@@ -103,7 +118,7 @@ public class PublishersController {
         }).collect(Collectors.toList());
         return ResultUtils.success(adSlotVOS);
     }
-    
+
     /**
      * 创建广告位
      *
@@ -134,7 +149,6 @@ public class PublishersController {
         
         if (adSlot == null) {
             // 抛异常
-
         }
         
         AdSlotVO adSlotVO = new AdSlotVO();
