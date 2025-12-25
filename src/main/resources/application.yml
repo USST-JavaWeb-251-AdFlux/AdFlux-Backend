@@ -18,7 +18,9 @@ spring:
     username: ${adflux.datasource.username}
     password: ${adflux.datasource.password}
     hikari:
-      keepalive-time: 180000
+      # MySQL 默认通常是 28800秒 (8小时)，这里设为 10-30 分钟比较稳妥
+      max-lifetime: 600000 # 10分钟 存活时间 10分钟又重新创建
+      keepalive-time: 180000 # 3分钟心跳 防止mysql断开
   # 开放更大的文件上传体积
   servlet:
     multipart:
