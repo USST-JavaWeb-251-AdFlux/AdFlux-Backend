@@ -1,0 +1,45 @@
+# 忽略 IDE 文件
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# 忽略 Git 相关文件
+.git/
+.gitignore
+
+# 忽略测试和构建相关目录
+target/
+!target/*.jar
+logs/
+log/
+
+# 忽略操作系统相关文件
+.DS_Store
+Thumbs.db
+
+# 忽略 node 相关（如果存在前端）
+node_modules/
+npm-debug.log
+yarn-debug.log
+yarn-error.log
+*.log
+
+# 忽略 Maven 相关
+.mvn/
+mvnw
+mvnw.cmd
+
+# 忽略本地配置
+*.local
+config/
+local.properties
+
+# 忽略临时文件
+tmp/
+temp/
+*.tmp
+*.temp
+
+# 忽略用户上传的文件（如果存在）
+data/ad-files/
