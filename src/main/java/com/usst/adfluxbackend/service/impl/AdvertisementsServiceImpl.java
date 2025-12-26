@@ -526,18 +526,19 @@ public class AdvertisementsServiceImpl extends ServiceImpl<AdvertisementsMapper,
      */
     @Override
     public IPage<AdvertisementVO> listAdsForAdmin(Integer status, Integer page, Integer pageSize) {
-        // 默认查询待审核广告
-        if (status == null) {
-            status = 0;
-        }
-        
         // 构造分页对象
         Page<Advertisements> pages = new Page<>(page != null ? page : 1, pageSize != null ? pageSize : 10);
         
         // 构造查询条件
         LambdaQueryWrapper<Advertisements> queryWrapper = new LambdaQueryWrapper<>();
-        queryWrapper.eq(Advertisements::getReviewStatus, status);
-        
+        if(status == null){
+            // 全查时，按 status 升序排列 (0 -> 1 -> 2)
+            queryWrapper.orderByAsc(Advertisements::getReviewStatus);
+            queryWrapper.orderByDesc(Advertisements::getCreateTime);
+        } else {
+            queryWrapper.eq(Advertisements::getReviewStatus, status);
+        }
+
         // 执行分页查询
         IPage<Advertisements> advertisementPage = this.page(pages, queryWrapper);
         

@@ -40,7 +40,7 @@ public class AdminController {
     /**
      * 获取待审核广告列表
      *
-     * @param status 审核状态，默认为 0（待审核）
+     * @param status 审核状态
      * @param page 页码
      * @param pageSize 每页数量
      * @return 广告分页列表
