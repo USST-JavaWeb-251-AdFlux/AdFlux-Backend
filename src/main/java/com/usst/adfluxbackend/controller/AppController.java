@@ -14,6 +14,11 @@ public class AppController {
     @Value("${app.version:[Unknown]}")
     private String appVersion;
 
+    /**
+     * Returns the current application version.
+     *
+     * @return a {@link BaseResponse} containing the application version string
+     */
     @GetMapping("/version")
     public BaseResponse<String> getAppVersion() {
         return ResultUtils.success(appVersion);
