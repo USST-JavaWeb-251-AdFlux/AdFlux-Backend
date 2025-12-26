@@ -1,5 +1,6 @@
 package com.usst.adfluxbackend.controller;
 
+import com.usst.adfluxbackend.annotation.RequireRole;
 import com.usst.adfluxbackend.common.BaseResponse;
 import com.usst.adfluxbackend.common.ResultUtils;
 import com.usst.adfluxbackend.model.vo.FileVO;
@@ -10,6 +11,7 @@ import org.springframework.web.multipart.MultipartFile;
 
 @RestController
 @RequestMapping("/file")
+@RequireRole("ADVERTISER")
 public class FileController {
 //   @Value("${ad-system.upload-path}")
 //    private String uploadPath;
