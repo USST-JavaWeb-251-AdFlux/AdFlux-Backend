@@ -11,7 +11,7 @@ import org.springframework.web.multipart.MultipartFile;
 
 @RestController
 @RequestMapping("/file")
-@RequireRole("ADVERTISER")
+@RequireRole("advertiser")
 public class FileController {
 //   @Value("${ad-system.upload-path}")
 //    private String uploadPath;

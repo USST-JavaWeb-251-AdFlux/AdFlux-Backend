@@ -24,7 +24,7 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 @RestController
-@RequireRole("ADMIN")
+@RequireRole("admin")
 @RequestMapping("/admin")
 public class AdminController {
     

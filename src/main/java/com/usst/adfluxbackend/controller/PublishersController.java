@@ -25,7 +25,7 @@ import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("/publishers")
-@RequireRole("PUBLISHER")
+@RequireRole("publisher")
 public class PublishersController {
     
     @Resource
