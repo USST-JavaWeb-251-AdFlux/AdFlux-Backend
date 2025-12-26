@@ -11,7 +11,7 @@ import org.springframework.web.bind.annotation.RestController;
 @RequestMapping("/app")
 public class AppController {
 
-    @Value("${app.version}")
+    @Value("${app.version:[Unknown]}")
     private String appVersion;
 
     @GetMapping("/version")
