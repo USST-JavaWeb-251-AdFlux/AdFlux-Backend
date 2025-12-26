@@ -24,15 +24,15 @@ jobs:
           distribution: 'microsoft'
           cache: maven
 
-      - name: Build with Maven
-        run: mvn -B package --file pom.xml -DskipTests
-
       - name: Set vars
         id: vars
         run: |
           export TZ='Asia/Shanghai'
           echo "hash=${GITHUB_SHA::7}" >> $GITHUB_OUTPUT
           echo "time=$(git log -1 --format=%cd --date=format-local:%Y.%m.%d.%H%M)" >> $GITHUB_OUTPUT
+
+      - name: Build with Maven
+        run: mvn -B package --file pom.xml -DskipTests -Dapp.version=${{ steps.vars.outputs.hash }}
 
       - name: Rename artifact
         run: mv target/*.jar target/app-${{ steps.vars.outputs.hash }}.jar
