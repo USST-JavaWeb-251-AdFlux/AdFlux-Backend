@@ -24,7 +24,7 @@ import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("/advertisers")
-@RequireRole("ADVERTISER")
+@RequireRole("advertiser")
 public class AdvertiserController {
 
     @Resource
