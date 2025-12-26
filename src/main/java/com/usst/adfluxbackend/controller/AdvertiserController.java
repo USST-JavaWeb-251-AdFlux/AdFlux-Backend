@@ -1,6 +1,7 @@
 package com.usst.adfluxbackend.controller;
 
 import com.baomidou.mybatisplus.core.metadata.IPage;
+import com.usst.adfluxbackend.annotation.RequireRole;
 import com.usst.adfluxbackend.common.BaseResponse;
 import com.usst.adfluxbackend.common.ResultUtils;
 import com.usst.adfluxbackend.model.dto.ad.*;
@@ -23,6 +24,7 @@ import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("/advertisers")
+@RequireRole("ADVERTISER")
 public class AdvertiserController {
 
     @Resource

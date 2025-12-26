@@ -55,10 +55,15 @@ public class JwtTokenInterceptor implements HandlerInterceptor {
         }
         // 获取当前请求对应的方法
         HandlerMethod handlerMethod = (HandlerMethod) handler;
-        // 获取方法上的注解
+        // A. 尝试获取方法上的注解
         RequireRole roleAnnotation = handlerMethod.getMethodAnnotation(RequireRole.class);
 
-        // 如果方法上有注解，说明需要鉴权
+        // B. 如果方法上没有注解，则尝试获取类（Controller）上的注解
+        if (roleAnnotation == null) {
+            // getBeanType() 获取的是 Controller 的 Class 对象
+            roleAnnotation = handlerMethod.getBeanType().getAnnotation(RequireRole.class);
+        }
+        // 如果方法或类上有注解，说明需要鉴权
         if (roleAnnotation != null) {
             // 获取接口要求的角色，例如 "ADMIN"
             String requiredRole = roleAnnotation.value();

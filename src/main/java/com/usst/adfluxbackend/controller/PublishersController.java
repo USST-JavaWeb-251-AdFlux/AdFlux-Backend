@@ -1,5 +1,6 @@
 package com.usst.adfluxbackend.controller;
 
+import com.usst.adfluxbackend.annotation.RequireRole;
 import com.usst.adfluxbackend.common.BaseResponse;
 import com.usst.adfluxbackend.common.ResultUtils;
 import com.usst.adfluxbackend.exception.ErrorCode;
@@ -24,6 +25,7 @@ import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("/publishers")
+@RequireRole("PUBLISHER")
 public class PublishersController {
     
     @Resource
