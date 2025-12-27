@@ -38,14 +38,14 @@ public class JwtTokenInterceptor implements HandlerInterceptor {
             roleAnnotation = handlerMethod.getBeanType().getAnnotation(RequireRole.class);
         }
 
-        // 如果方法和类上都没有注解，说明不需要鉴权，直接通过
-        if (roleAnnotation == null) {
+        // 如果注解上禁用了鉴权，直接通过
+        if(roleAnnotation != null && roleAnnotation.disabled()) {
             return true;
         }
 
         // 从请求头中获取token
         String token = request.getHeader("Authorization");
-        
+
         // 如果没有token，直接抛出异常
         if (token == null || !token.startsWith("Bearer ")) {
             throw new TokenException(ErrorCode.TOKEN_ERROR, "Token无效");
@@ -69,15 +69,19 @@ public class JwtTokenInterceptor implements HandlerInterceptor {
             throw new TokenException(ErrorCode.TOKEN_ERROR, "Token无效或已过期");
         }
 
-        // 如果方法或类上有注解，说明需要鉴权
-        // 获取接口要求的角色，例如 "ADMIN"
+        // 如果无注解或注解值为空，说明只需验证用户已登录，无需验证角色，直接通过
+        if (roleAnnotation == null || roleAnnotation.value().isEmpty()) {
+            return true;
+        }
+
+        // 获取接口要求的角色，例如 "admin"
         String requiredRole = roleAnnotation.value();
 
         // 获取用户当前的角色
         String currentUserRole = claims.get("userRole", String.class);
 
         // 对比角色
-        if (!requiredRole.isEmpty() && !requiredRole.equals(currentUserRole)) {
+        if (!requiredRole.equals(currentUserRole)) {
             // 角色不匹配，抛出异常或返回 false
             log.warn("用户 {} 试图访问受限接口，需要角色: {}", BaseContext.getCurrentId(), requiredRole);
             throw new TokenException(ErrorCode.NO_AUTH_ERROR, "权限不足，无法访问");

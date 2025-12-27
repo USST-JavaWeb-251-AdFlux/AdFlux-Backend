@@ -11,4 +11,5 @@ public @interface RequireRole {
     // 传入需要的角色，例如 "admin", "advertiser", "publisher"
     // 为空时，表示需要是登录用户，但不检验角色
     String value() default "";
+    boolean disabled() default false;
 }
