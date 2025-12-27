@@ -32,7 +32,7 @@ public class AdPlacements {
     /**
      * 广告版式（banner/sidebar/card等）
      */
-    private String adLayout;
+    private Integer adLayout;
 
     /**
      * 创建时间

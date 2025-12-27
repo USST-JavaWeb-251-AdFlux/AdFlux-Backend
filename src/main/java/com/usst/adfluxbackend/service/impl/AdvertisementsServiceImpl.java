@@ -18,6 +18,7 @@ import com.usst.adfluxbackend.model.dto.ad.ToggleAdStatusRequest;
 import com.usst.adfluxbackend.model.dto.statistic.DataOverviewQueryRequest;
 import com.usst.adfluxbackend.model.entity.AdDisplays;
 import com.usst.adfluxbackend.model.entity.Advertisements;
+import com.usst.adfluxbackend.model.enums.AdLayoutEnum;
 import com.usst.adfluxbackend.model.vo.*;
 import com.usst.adfluxbackend.service.AdvertisementsService;
 import org.springframework.beans.BeanUtils;
@@ -137,9 +138,9 @@ public class AdvertisementsServiceImpl extends ServiceImpl<AdvertisementsMapper,
                 ErrorCode.PARAMS_ERROR, "周预算 weeklyBudget 最低为 200");
 
         // adLayout：只能是 0 / 1 / 2
-        String adLayout = createRequest.getAdLayout();
+        Integer adLayout = createRequest.getAdLayout();
         ThrowUtils.throwIf(adLayout == null ||
-                        !(adLayout.equals("0") || adLayout.equals("1") || adLayout.equals("2")),
+                        !(adLayout.equals(AdLayoutEnum.BANNER.getCode()) || adLayout.equals(AdLayoutEnum.SIDEBAR.getCode()) || adLayout.equals(AdLayoutEnum.CARD.getCode())),
                 ErrorCode.PARAMS_ERROR, "广告版式 adLayout 只允许 0-banner / 1-sidebar / 2-card");
 
         // mediaUrl：非空
@@ -251,7 +252,7 @@ public class AdvertisementsServiceImpl extends ServiceImpl<AdvertisementsMapper,
         if (updateRequest.getCategoryId() != null) {
             advertisement.setCategoryId(updateRequest.getCategoryId());
         }
-        if (StringUtils.hasText(updateRequest.getAdLayout())) {
+        if (updateRequest.getAdLayout() != null) {
             advertisement.setAdLayout(updateRequest.getAdLayout());
         }
         if (updateRequest.getWeeklyBudget() != null) {

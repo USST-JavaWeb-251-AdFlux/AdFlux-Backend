@@ -34,7 +34,7 @@ public class CreateAdvertisementRequest implements Serializable {
     /**
      * 广告版式（0-banner； 1-sidebar； 2-card）
      */
-    private String adLayout;
+    private Integer adLayout;
 
     /**
      * 周预算
