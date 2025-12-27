@@ -39,6 +39,7 @@ public class WebMvcConfiguration implements WebMvcConfigurer {
                         "/webjars/**",
                         "/swagger-resources/**",
                         "/favicon.ico",
+                        "/track/**",
                         resourceExclusion
                 );
     }

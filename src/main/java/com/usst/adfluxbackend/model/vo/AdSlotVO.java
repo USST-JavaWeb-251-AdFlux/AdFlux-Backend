@@ -1,44 +1,34 @@
 package com.usst.adfluxbackend.model.vo;
 
-import com.fasterxml.jackson.databind.annotation.JsonSerialize;
-import com.fasterxml.jackson.databind.ser.std.ToStringSerializer;
 import lombok.Data;
 
 import java.io.Serializable;
 import java.util.Date;
 
 /**
- * 广告位信息视图
+ * 广告位响应VO
  */
 @Data
 public class AdSlotVO implements Serializable {
+    /**
+     * 展示数据：displayId（用于后续接口更新停留时长、点击情况等）
+     */
+    private Long displayId;
 
     /**
-     * 广告位 ID
+     * 媒体文件地址（图片/视频）
      */
-    @JsonSerialize(using = ToStringSerializer.class)
-    private Long placementId;
+    private String mediaUrl;
 
     /**
-     * 网站 ID
+     * 广告标题
      */
-    @JsonSerialize(using = ToStringSerializer.class)
-    private Long websiteId;
+    private String title;
 
     /**
-     * 广告位名称
+     * 落地页链接
      */
-    private String placementName;
-
-    /**
-     * 广告版式（banner/sidebar 等）
-     */
-    private String adLayout;
-
-    /**
-     * 创建时间
-     */
-    private Date createTime;
+    private String landingPage;
 
     private static final long serialVersionUID = 1L;
 }

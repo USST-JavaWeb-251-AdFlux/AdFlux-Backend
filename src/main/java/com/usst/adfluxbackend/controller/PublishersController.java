@@ -3,6 +3,7 @@ package com.usst.adfluxbackend.controller;
 import com.usst.adfluxbackend.annotation.RequireRole;
 import com.usst.adfluxbackend.common.BaseResponse;
 import com.usst.adfluxbackend.common.ResultUtils;
+import com.usst.adfluxbackend.exception.BusinessException;
 import com.usst.adfluxbackend.exception.ErrorCode;
 import com.usst.adfluxbackend.exception.ThrowUtils;
 import com.usst.adfluxbackend.model.dto.publisher.CreateAdSlotRequest;
@@ -151,6 +152,7 @@ public class PublishersController {
         
         if (adSlot == null) {
             // 抛异常
+            throw new BusinessException(1, "广告位不存在或无访问权限");
         }
         
         AdSlotVO adSlotVO = new AdSlotVO();

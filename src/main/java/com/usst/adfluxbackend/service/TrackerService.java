@@ -1,8 +1,6 @@
 package com.usst.adfluxbackend.service;
+import com.usst.adfluxbackend.model.vo.AdSlotVO;
 
-/**
- * 页面访问跟踪 Service 接口
- */
 public interface TrackerService {
     /**
      * 记录页面访问并返回访问ID
@@ -22,4 +20,15 @@ public interface TrackerService {
      * @return 更新是否成功
      */
     boolean updateVisitDuration(Long visitId, Integer duration);
+    
+    /**
+     * 根据条件筛选并返回合适的广告
+     *
+     * @param trackId 匿名用户标识
+     * @param domain 用户当前访问的网站域名
+     * @param adType 请求的广告类型
+     * @param adLayout 广告的展现形式
+     * @return AdSlotVO 广告数据
+     */
+    AdSlotVO selectAdForSlot(String trackId, String domain, Integer adType, String adLayout);
 }
