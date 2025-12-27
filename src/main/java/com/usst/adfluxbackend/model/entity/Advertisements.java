@@ -77,7 +77,7 @@ public class Advertisements {
     private Date editTime;
 
     /**
-     * 广告版式（0-banner； 1-sidebar； 2-card）
+     * 广告版式（0-video； 1-banner； 2-sidebar）
      */
     private Integer adLayout;
 

@@ -140,8 +140,8 @@ public class AdvertisementsServiceImpl extends ServiceImpl<AdvertisementsMapper,
         // adLayout：只能是 0 / 1 / 2
         Integer adLayout = createRequest.getAdLayout();
         ThrowUtils.throwIf(adLayout == null ||
-                        !(adLayout.equals(AdLayoutEnum.BANNER.getCode()) || adLayout.equals(AdLayoutEnum.SIDEBAR.getCode()) || adLayout.equals(AdLayoutEnum.CARD.getCode())),
-                ErrorCode.PARAMS_ERROR, "广告版式 adLayout 只允许 0-banner / 1-sidebar / 2-card");
+                        !(adLayout.equals(AdLayoutEnum.BANNER.getCode()) || adLayout.equals(AdLayoutEnum.SIDEBAR.getCode()) || adLayout.equals(AdLayoutEnum.VIDEO.getCode())),
+                ErrorCode.PARAMS_ERROR, "广告版式 adLayout 只允许 0-video / 1-banner / 2-sidebar");
 
         // mediaUrl：非空
         String mediaUrl = createRequest.getMediaUrl();
