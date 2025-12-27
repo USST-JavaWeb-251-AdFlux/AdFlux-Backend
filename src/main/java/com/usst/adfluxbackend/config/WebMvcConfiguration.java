@@ -29,18 +29,7 @@ public class WebMvcConfiguration implements WebMvcConfigurer {
         String resourceExclusion = accessPrefix.endsWith("/") ? accessPrefix + "**" : accessPrefix + "/**";
 
         registry.addInterceptor(jwtTokenInterceptor)
-                .addPathPatterns("/**")
-                .excludePathPatterns(
-                        "/auth/login",
-                        "/auth/register",
-                        "/swagger-ui/**",
-                        "/v3/api-docs/**",
-                        "/doc.html",
-                        "/webjars/**",
-                        "/swagger-resources/**",
-                        "/favicon.ico",
-                        resourceExclusion
-                );
+                .addPathPatterns("/**");
     }
 
     @Override
