@@ -33,7 +33,7 @@ public class AdSlotVO implements Serializable {
     /**
      * 广告版式（banner/sidebar 等）
      */
-    private String adLayout;
+    private Integer adLayout;
 
     /**
      * 创建时间

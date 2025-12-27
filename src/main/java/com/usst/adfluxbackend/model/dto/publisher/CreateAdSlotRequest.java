@@ -21,9 +21,9 @@ public class CreateAdSlotRequest implements Serializable {
     private String placementName;
 
     /**
-     * 广告版式：banner / sidebar / ...
+     * 广告版式（0-video； 1-banner； 2-sidebar）
      */
-    private String adLayout;
+    private Integer adLayout;
 
     private static final long serialVersionUID = 1L;
 }

@@ -83,7 +83,7 @@ public class AdPlacementsServiceImpl extends ServiceImpl<AdPlacementsMapper, AdP
      * @return 创建的广告位
      */
     @Override
-    public AdPlacements createAdSlot(Long websiteId, String placementName, String adLayout) {
+    public AdPlacements createAdSlot(Long websiteId, String placementName, Integer adLayout) {
         Long currentPublisherId = BaseContext.getCurrentId();
         
         // 验证该网站是否属于当前站长

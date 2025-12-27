@@ -33,9 +33,9 @@ public class UpdateAdvertisementRequest implements Serializable {
     private Long categoryId;
 
     /**
-     * 广告版式（0-banner； 1-sidebar； 2-card）
+     * 广告版式（0-video； 1-banner； 2-sidebar）
      */
-    private String adLayout;
+    private Integer adLayout;
 
     /**
      * 周预算

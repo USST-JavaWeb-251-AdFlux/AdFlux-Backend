@@ -30,9 +30,9 @@ public class AdPlacements {
     private String placementName;
 
     /**
-     * 广告版式（banner/sidebar/card等）
+     * 广告版式（0-video； 1-banner； 2-sidebar）
      */
-    private String adLayout;
+    private Integer adLayout;
 
     /**
      * 创建时间

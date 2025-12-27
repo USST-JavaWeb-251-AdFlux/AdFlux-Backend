@@ -30,7 +30,7 @@ public interface AdPlacementsService extends IService<AdPlacements> {
      * @param adLayout 广告版式
      * @return 创建的广告位
      */
-    AdPlacements createAdSlot(Long websiteId, String placementName, String adLayout);
+    AdPlacements createAdSlot(Long websiteId, String placementName, Integer adLayout);
 
     /**
      * 获取广告位详情

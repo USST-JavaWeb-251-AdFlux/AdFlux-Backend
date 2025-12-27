@@ -49,7 +49,7 @@ public class AdvertisementVO implements Serializable {
     /**
      * 广告版式
      */
-    private String adLayout;
+    private Integer adLayout;
 
     /**
      * 周预算

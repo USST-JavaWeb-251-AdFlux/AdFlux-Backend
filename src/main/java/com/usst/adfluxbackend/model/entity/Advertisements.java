@@ -1,6 +1,7 @@
 package com.usst.adfluxbackend.model.entity;
 
 import com.baomidou.mybatisplus.annotation.IdType;
+import com.baomidou.mybatisplus.annotation.TableField;
 import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableName;
 import java.math.BigDecimal;
@@ -76,9 +77,9 @@ public class Advertisements {
     private Date editTime;
 
     /**
-     * 广告版式（0-banner； 1-sidebar； 2-card）
+     * 广告版式（0-video； 1-banner； 2-sidebar）
      */
-    private String adLayout;
+    private Integer adLayout;
 
     /**
      * 拒绝原因
