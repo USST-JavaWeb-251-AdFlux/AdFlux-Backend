@@ -39,7 +39,7 @@ public class JwtTokenInterceptor implements HandlerInterceptor {
         }
 
         // 如果方法和类上都没有注解，说明不需要鉴权，直接通过
-        if(roleAnnotation == null) {
+        if (roleAnnotation == null) {
             return true;
         }
 
