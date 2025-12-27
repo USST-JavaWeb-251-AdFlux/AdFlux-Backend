@@ -38,7 +38,7 @@ public class WebMvcConfiguration implements WebMvcConfigurer {
                         "/v3/api-docs/**",
                         "/webjars/**",
                         resourceExclusion
-                );;
+                );
     }
 
     @Override
