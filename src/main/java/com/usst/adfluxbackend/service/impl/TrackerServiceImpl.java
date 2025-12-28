@@ -17,15 +17,13 @@ import javax.annotation.Resource;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.sql.Timestamp;
-import java.time.DayOfWeek;
-import java.time.LocalDate;
-import java.time.ZoneId;
-import java.time.ZonedDateTime;
+import java.time.*;
 import java.time.temporal.TemporalAdjusters;
 import java.util.*;
 import java.util.stream.Collectors;
 
 import static java.sql.Timestamp.valueOf;
+import static java.time.Duration.between;
 
 @Service
 public class TrackerServiceImpl implements TrackerService {
@@ -150,6 +148,7 @@ public class TrackerServiceImpl implements TrackerService {
             throw new BusinessException(1, "该分类下没有广告");
         }
         Random random = new Random();
+        // 随机选择
         Advertisements selectedAd = adsInCategory.get(random.nextInt(adsInCategory.size()));
 
         // 第四步：记录展示数据
@@ -254,23 +253,32 @@ public class TrackerServiceImpl implements TrackerService {
         if (totalDisplays > 0) {
             // 按分类统计点击率 统计分类展示总数和点击总数
             Map<Long, Integer> categoryClicks = new HashMap<>();
-            Map<Long, Integer> categoryDisplays = new HashMap<>();
+            Map<Long, Double> categoryDisplays = new HashMap<>();
 
             for (AdDisplays display : displayList) {
                 // 需要获取广告的分类ID
                 Advertisements ad = advertisementsMapper.selectById(display.getAdId());
                 if (ad != null && categoryIds.contains(ad.getCategoryId())) {
                     Long categoryId = ad.getCategoryId();
-                    categoryDisplays.merge(categoryId, 1, Integer::sum);
+
+                    Instant instant = display.getDisplayTime().toInstant();
+                    Timestamp timestamp = Timestamp.from(instant);
+                    
+                    // 计算时间权重值
+                    double timeWeight = calculateTimeWeight(timestamp);
+                    
+                    // 使用时间权重更新展示统计
+                    categoryDisplays.merge(categoryId, timeWeight, Double::sum);
                     if (display.getClicked() != null && display.getClicked() == 1) {
-                        categoryClicks.merge(categoryId, 1, Integer::sum);
+                        // 点击也应用时间权重
+                        categoryClicks.merge(categoryId, (int) Math.round(timeWeight), Integer::sum);
                     }
                 }
             }
 
             // 更新权重，结合点击率
             for (Long categoryId : categoryIds) {
-                int categoryDisplayCount = categoryDisplays.getOrDefault(categoryId, 0);
+                Double categoryDisplayCount = categoryDisplays.getOrDefault(categoryId, 0.0);
                 if (categoryDisplayCount > 0) {
                     int categoryClickCount = categoryClicks.getOrDefault(categoryId, 0);
                     // 分类点击率：该类型点击总数 / 该类型展示总数
@@ -278,8 +286,8 @@ public class TrackerServiceImpl implements TrackerService {
 
                     // 计算权重差异
                     // todo 这些地方后期记录一下日志
-                    // 该分类点击率 - 该用户点击率 （啥算法，有点神奇 666）
-                    double weightAdjustment = (categoryClickRate - avgClickRate) * 0.5; // 调整幅度
+                    // 该分类点击率 - 该用户点击率
+                    double weightAdjustment = (categoryClickRate - avgClickRate) * 0.8; // 调整幅度 突出点击率的影响
                     double currentWeight = weights.get(categoryId);
                     weights.put(categoryId, Math.max(0, currentWeight + weightAdjustment));
                 }
@@ -302,7 +310,7 @@ public class TrackerServiceImpl implements TrackerService {
      */
     private Long selectCategoryByWeight(Map<Long, Double> weights) {
         if (weights.isEmpty()) {
-            throw new BusinessException(1, "无法选出广告类型");
+            return null;
         }
 
         // 生成随机数
@@ -318,5 +326,36 @@ public class TrackerServiceImpl implements TrackerService {
 
         // 如果随机选择失败，返回第一个分类
         return weights.keySet().iterator().next();
+    }
+    
+    /**
+     * 根据展示时间计算时间权重值
+     * 时间越近，权重越大
+     * @param displayTime 展示时间
+     * @return 时间权重值
+     */
+    private double calculateTimeWeight(Timestamp displayTime) {
+        if (displayTime == null) {
+            return 1.0; // 如果没有时间，默认权重为1
+        }
+        
+        // 获取当前时间
+        ZonedDateTime now = ZonedDateTime.now();
+        ZonedDateTime displayDateTime = displayTime.toLocalDateTime().atZone(ZoneId.systemDefault());
+        
+        // 计算时间差（小时）
+        long hoursDiff = between(displayDateTime, now).toHours();
+        
+        // 定义衰减参数
+        // 比如每24小时权重减半，使用指数衰减函数: weight = base * decay_factor^(hours/decay_period)
+        double baseWeight = 1.0; // 基础权重
+        double decayFactor = 0.5; // 衰减因子
+        int decayPeriodHours = 24; // 衰减周期（小时）
+        
+        // 计算时间权重，越近的时间权重越大
+        double timeWeight =baseWeight * Math.pow(decayFactor, (double) hoursDiff / decayPeriodHours);
+        
+        // 确保权重不小于最小值
+        return Math.max(timeWeight, 0.1);
     }
 }
