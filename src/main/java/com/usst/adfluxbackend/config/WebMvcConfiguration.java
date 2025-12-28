@@ -31,15 +31,12 @@ public class WebMvcConfiguration implements WebMvcConfigurer {
         registry.addInterceptor(jwtTokenInterceptor)
                 .addPathPatterns("/**")
                 .excludePathPatterns(
-                        "/auth/login",
-                        "/auth/register",
-                        "/swagger-ui/**",
-                        "/v3/api-docs/**",
                         "/doc.html",
-                        "/webjars/**",
-                        "/swagger-resources/**",
                         "/favicon.ico",
-                        "/track/**",
+                        "/swagger-ui/**",
+                        "/swagger-resources/**",
+                        "/v3/api-docs/**",
+                        "/webjars/**",
                         resourceExclusion
                 );
     }

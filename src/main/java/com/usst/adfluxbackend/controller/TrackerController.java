@@ -1,5 +1,6 @@
 package com.usst.adfluxbackend.controller;
 
+import com.usst.adfluxbackend.annotation.RequireRole;
 import com.usst.adfluxbackend.common.BaseResponse;
 import com.usst.adfluxbackend.common.ResultUtils;
 import com.usst.adfluxbackend.exception.BusinessException;
@@ -19,6 +20,7 @@ import javax.annotation.Resource;
  */
 @RestController
 @RequestMapping("/track")
+@RequireRole(disabled = true)
 public class TrackerController {
 
     @Resource

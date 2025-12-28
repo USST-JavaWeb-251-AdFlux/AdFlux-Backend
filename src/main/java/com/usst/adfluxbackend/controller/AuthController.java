@@ -1,5 +1,6 @@
 package com.usst.adfluxbackend.controller;
 
+import com.usst.adfluxbackend.annotation.RequireRole;
 import com.usst.adfluxbackend.common.BaseResponse;
 import com.usst.adfluxbackend.common.ResultUtils;
 import com.usst.adfluxbackend.exception.ErrorCode;
@@ -17,6 +18,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 @RestController
 @RequestMapping("/auth")
+@RequireRole(disabled = true)
 public class AuthController {
     @Autowired
     private UsersService usersService;

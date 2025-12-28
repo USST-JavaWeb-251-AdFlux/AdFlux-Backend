@@ -1,5 +1,6 @@
 package com.usst.adfluxbackend.controller;
 
+import com.usst.adfluxbackend.annotation.RequireRole;
 import com.usst.adfluxbackend.common.BaseResponse;
 import com.usst.adfluxbackend.common.ResultUtils;
 import com.usst.adfluxbackend.model.entity.AdCategories;
@@ -16,6 +17,7 @@ import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("/common")
+@RequireRole
 public class CommonController {
 
     @Resource
