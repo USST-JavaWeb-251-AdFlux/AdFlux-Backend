@@ -8,27 +8,25 @@ import java.io.Serializable;
 import java.util.Date;
 
 /**
- * 广告位信息视图
+ * 广告位响应VO
  */
 @Data
 public class AdSlotVO implements Serializable {
-
     /**
-     * 广告位 ID
+     * 展示数据：displayId（用于后续接口更新停留时长、点击情况等）
      */
     @JsonSerialize(using = ToStringSerializer.class)
-    private Long placementId;
+    private Long displayId;
 
     /**
-     * 网站 ID
+     * 媒体文件地址（图片/视频）
      */
-    @JsonSerialize(using = ToStringSerializer.class)
-    private Long websiteId;
+    private String mediaUrl;
 
     /**
-     * 广告位名称
+     * 广告标题
      */
-    private String placementName;
+    private String title;
 
     /**
      * 广告版式（banner/sidebar 等）
@@ -36,9 +34,9 @@ public class AdSlotVO implements Serializable {
     private Integer adLayout;
 
     /**
-     * 创建时间
+     * 落地页链接
      */
-    private Date createTime;
+    private String landingPage;
 
     private static final long serialVersionUID = 1L;
 }
