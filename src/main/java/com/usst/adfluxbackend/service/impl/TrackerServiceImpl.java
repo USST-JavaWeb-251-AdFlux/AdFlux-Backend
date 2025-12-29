@@ -87,7 +87,7 @@ public class TrackerServiceImpl implements TrackerService {
     }
 
     @Override
-    public AdSlotVO selectAdForSlot(String trackId, String domain, Integer adType, String adLayout) {
+    public AdSlotVO selectAdForSlot(String trackId, String domain, Integer adType, Integer adLayout) {
         // 第一步：根据域名获取网站ID
         QueryWrapper<Publishers> pubWrapper = new QueryWrapper<>();
         pubWrapper.eq("domain", domain);
@@ -164,6 +164,7 @@ public class TrackerServiceImpl implements TrackerService {
         // 第五步：返回响应
         AdSlotVO adSlotVO = new AdSlotVO();
         adSlotVO.setDisplayId(displayId);
+        adSlotVO.setAdLayout(adLayout);
         adSlotVO.setMediaUrl(selectedAd.getMediaUrl());
         adSlotVO.setTitle(selectedAd.getTitle());
         adSlotVO.setLandingPage(selectedAd.getLandingPage());

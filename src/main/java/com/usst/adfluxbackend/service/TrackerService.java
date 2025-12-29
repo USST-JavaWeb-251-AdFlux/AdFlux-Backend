@@ -30,5 +30,5 @@ public interface TrackerService {
      * @param adLayout 广告的展现形式
      * @return AdSlotVO 广告数据
      */
-    AdSlotVO selectAdForSlot(String trackId, String domain, Integer adType, String adLayout);
+    AdSlotVO selectAdForSlot(String trackId, String domain, Integer adType, Integer adLayout);
 }

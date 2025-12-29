@@ -24,6 +24,11 @@ public class AdSlotVO implements Serializable {
     private String mediaUrl;
 
     /**
+     * 广告标题
+     */
+    private String title;
+
+    /**
      * 广告版式（banner/sidebar 等）
      */
     private Integer adLayout;

@@ -28,7 +28,7 @@ public class AdSlotRequest implements Serializable {
     /**
      * 广告的展现形式
      */
-    private String adLayout;
+    private Integer adLayout;
 
     private static final long serialVersionUID = 1L;
 }
