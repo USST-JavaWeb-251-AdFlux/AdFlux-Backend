@@ -8,10 +8,7 @@ import com.usst.adfluxbackend.model.dto.ad.UpdateAdvertisementRequest;
 import com.usst.adfluxbackend.model.dto.ad.ToggleAdStatusRequest;
 import com.usst.adfluxbackend.model.dto.statistic.DataOverviewQueryRequest;
 import com.usst.adfluxbackend.model.entity.Advertisements;
-import com.usst.adfluxbackend.model.vo.AdvertisementReviewVO;
-import com.usst.adfluxbackend.model.vo.AdvertisementStatisticsVO;
-import com.usst.adfluxbackend.model.vo.AdvertisementVO;
-import com.usst.adfluxbackend.model.vo.DataOverviewVO;
+import com.usst.adfluxbackend.model.vo.*;
 
 /**
 * @author 30637
@@ -72,11 +69,11 @@ public interface AdvertisementsService extends IService<Advertisements> {
 
     /**
      * 获取广告主数据概览
-     *
+     * 获取广告主层面的数据概览（返回结构与单广告统计一致，adId 字段为 null）
      * @param queryRequest 查询条件
      * @return 数据概览
      */
-    DataOverviewVO getDataOverview(DataOverviewQueryRequest queryRequest);
+    DataOverviewStatisticsVO getDataOverview(DataOverviewQueryRequest queryRequest);
 
     /**
      * 获取广告统计数据

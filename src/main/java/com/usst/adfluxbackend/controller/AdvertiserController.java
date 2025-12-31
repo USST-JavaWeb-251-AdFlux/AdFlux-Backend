@@ -210,10 +210,11 @@ public class AdvertiserController {
      * @return 数据概览
      */
     @GetMapping("/statistics/summary")
-    public BaseResponse<DataOverviewVO> getDataOverview(DataOverviewQueryRequest queryRequest) {
-        DataOverviewVO dataOverviewVO = advertisementsService.getDataOverview(queryRequest);
-        return ResultUtils.success(dataOverviewVO);
+    public BaseResponse<DataOverviewStatisticsVO> getDataOverview(DataOverviewQueryRequest queryRequest) {
+        DataOverviewStatisticsVO dataOverviewStatisticsVO = advertisementsService.getDataOverview(queryRequest);
+        return ResultUtils.success(dataOverviewStatisticsVO);
     }
+
     
     /**
      * 获取广告统计数据

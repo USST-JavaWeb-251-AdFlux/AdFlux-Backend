@@ -44,6 +44,11 @@ public class AdvertisementsServiceImpl extends ServiceImpl<AdvertisementsMapper,
     @Resource
     private AdDisplaysMapper adDisplaysMapper;
 
+    @Resource
+    private AdvertisementsMapper advertisementsMapper;
+
+    private static final SimpleDateFormat DATE_FMT = new SimpleDateFormat("yyyy-MM-dd");
+
     /**
      * 根据条件分页查询当前广告主的广告列表
      *
@@ -90,30 +95,6 @@ public class AdvertisementsServiceImpl extends ServiceImpl<AdvertisementsMapper,
      * @param createRequest 创建广告请求
      * @return 创建的广告信息
      */
-//    @Override
-//    public AdvertisementVO createAdvertisement(CreateAdvertisementRequest createRequest) {
-//        Long currentAdvertiserId = BaseContext.getCurrentId();
-//
-//        // 构造广告实体
-//        Advertisements advertisement = new Advertisements();
-//        BeanUtils.copyProperties(createRequest, advertisement);
-//        advertisement.setAdvertiserId(currentAdvertiserId);
-//        // 设置初始状态：待审核，未启用
-//        advertisement.setReviewStatus(0);
-//        advertisement.setIsActive(0);
-//        // 设置创建和编辑时间
-//        Date now = new Date();
-//        advertisement.setCreateTime(now);
-//        advertisement.setEditTime(now);
-//
-//        // 保存到数据库
-//        this.save(advertisement);
-//
-//        // 转换为VO对象并返回
-//        AdvertisementVO advertisementVO = new AdvertisementVO();
-//        BeanUtils.copyProperties(advertisement, advertisementVO);
-//        return advertisementVO;
-//    }
     @Override
     public AdvertisementVO createAdvertisement(CreateAdvertisementRequest createRequest) {
 
@@ -346,44 +327,116 @@ public class AdvertisementsServiceImpl extends ServiceImpl<AdvertisementsMapper,
      * @return 数据概览
      */
     @Override
-    public DataOverviewVO getDataOverview(DataOverviewQueryRequest queryRequest) {
+    public DataOverviewStatisticsVO getDataOverview(DataOverviewQueryRequest queryRequest) {
         Long currentAdvertiserId = BaseContext.getCurrentId();
-        
-        // 构造查询条件
-        LambdaQueryWrapper<AdDisplays> queryWrapper = new LambdaQueryWrapper<>();
-        queryWrapper.eq(AdDisplays::getAdId, currentAdvertiserId);
-        
-        // 添加日期筛选条件
-        if (StringUtils.hasText(queryRequest.getStartDate())) {
-            queryWrapper.ge(AdDisplays::getDisplayTime, queryRequest.getStartDate());
+
+        // 1. 获取当前广告主的所有广告 id
+        List<Advertisements> ads = advertisementsMapper.selectList(
+                new LambdaQueryWrapper<Advertisements>().eq(Advertisements::getAdvertiserId, currentAdvertiserId)
+        );
+
+        List<Long> adIds = ads == null ? Collections.emptyList()
+                : ads.stream().map(Advertisements::getAdId).collect(Collectors.toList());
+
+        // 如果广告主没有广告，返回空结果
+        DataOverviewStatisticsVO empty = new DataOverviewStatisticsVO();
+        empty.setTotalImpressions(0L);
+        empty.setTotalClicks(0L);
+        empty.setCtr(0.0);
+        empty.setDaily(Collections.emptyList());
+        if (adIds.isEmpty()) {
+            return empty;
         }
-        if (StringUtils.hasText(queryRequest.getEndDate())) {
-            queryWrapper.le(AdDisplays::getDisplayTime, queryRequest.getEndDate());
+
+        // 2. 解析时间范围（前端传 yyyy-MM-dd）
+        Date startDate = null;
+        Date endDateExclusive = null; // we'll use < endExclusive
+        if (queryRequest != null) {
+            try {
+                if (StringUtils.hasText(queryRequest.getStartDate())) {
+                    startDate = DATE_FMT.parse(queryRequest.getStartDate());
+                }
+                if (StringUtils.hasText(queryRequest.getEndDate())) {
+                    Date parsedEnd = DATE_FMT.parse(queryRequest.getEndDate());
+                    Calendar cal = Calendar.getInstance();
+                    cal.setTime(parsedEnd);
+                    cal.add(Calendar.DAY_OF_MONTH, 1);
+                    endDateExclusive = cal.getTime();
+                }
+            } catch (ParseException e) {
+                throw new BusinessException(ErrorCode.PARAMS_ERROR, "日期格式错误，应为 yyyy-MM-dd");
+            }
         }
-        
-        // 查询展示数据
-        List<AdDisplays> adDisplaysList = adDisplaysMapper.selectList(queryWrapper);
-        
-        // 计算统计数据
-        long totalImpressions = adDisplaysList.size();
-        long totalClicks = adDisplaysList.stream()
-                .mapToLong(display -> display.getClicked() != null ? display.getClicked() : 0)
-                .sum();
-        
+
+        // 3. 从 ad_displays 查询符合 adIds 与时间范围的展示记录
+        LambdaQueryWrapper<AdDisplays> q = new LambdaQueryWrapper<>();
+        q.in(AdDisplays::getAdId, adIds);
+        if (startDate != null) {
+            q.ge(AdDisplays::getDisplayTime, startDate);
+        }
+        if (endDateExclusive != null) {
+            q.lt(AdDisplays::getDisplayTime, endDateExclusive);
+        }
+        List<AdDisplays> displays = adDisplaysMapper.selectList(q);
+        if (displays == null) displays = Collections.emptyList();
+
+        // 4. 汇总 total impressions / clicks / ctr
+        long totalImpressions = displays.size();
+        long totalClicks = displays.stream().filter(d -> d.getClicked() != null && d.getClicked() == 1).count();
         double ctr = totalImpressions > 0 ? (double) totalClicks / totalImpressions : 0.0;
-        
-        // TODO: 计算总花费，这里暂时设为0
-        double totalSpend = 0.0;
-        
-        // 构造返回对象
-        DataOverviewVO dataOverviewVO = new DataOverviewVO();
-        dataOverviewVO.setTotalImpressions(totalImpressions);
-        dataOverviewVO.setTotalClicks(totalClicks);
-        dataOverviewVO.setCtr(ctr);
-        dataOverviewVO.setTotalSpend(totalSpend);
-        
-        return dataOverviewVO;
+
+        // 5. 生成 daily 明细（按 yyyy-MM-dd）
+        Map<String, DailyStatisticsVO> dailyMap = new LinkedHashMap<>();
+        for (AdDisplays d : displays) {
+            Date dt = d.getDisplayTime();
+            String key = DATE_FMT.format(dt);
+            DailyStatisticsVO ds = dailyMap.computeIfAbsent(key, k -> {
+                DailyStatisticsVO tmp = new DailyStatisticsVO();
+                tmp.setDate(k);
+                tmp.setImpressions(0L);
+                tmp.setClicks(0L);
+                return tmp;
+            });
+            ds.setImpressions(ds.getImpressions() + 1);
+            if (d.getClicked() != null && d.getClicked() == 1) {
+                ds.setClicks(ds.getClicks() + 1);
+            }
+        }
+
+        // 6. 如果同时提供 start/end，则填充连续日期（缺失天补 0）
+        List<DailyStatisticsVO> dailyList;
+        if (startDate != null && endDateExclusive != null) {
+            Calendar cal = Calendar.getInstance();
+            // endInclusive = endDateExclusive - 1 day
+            cal.setTime(endDateExclusive);
+            cal.add(Calendar.DAY_OF_MONTH, -1);
+            Date endInclusive = cal.getTime();
+
+            List<DailyStatisticsVO> temp = new ArrayList<>();
+            cal.setTime(startDate);
+            while (!cal.getTime().after(endInclusive)) {
+                String key = DATE_FMT.format(cal.getTime());
+                DailyStatisticsVO ds = dailyMap.getOrDefault(key, new DailyStatisticsVO());
+                if (ds.getDate() == null) ds.setDate(key);
+                if (ds.getImpressions() == null) ds.setImpressions(0L);
+                if (ds.getClicks() == null) ds.setClicks(0L);
+                temp.add(ds);
+                cal.add(Calendar.DAY_OF_MONTH, 1);
+            }
+            dailyList = temp;
+        } else {
+            dailyList = new ArrayList<>(dailyMap.values());
+        }
+
+        // 7. 返回
+        DataOverviewStatisticsVO dataOverviewStatisticsVO = new DataOverviewStatisticsVO();
+        dataOverviewStatisticsVO.setCtr(ctr);
+        dataOverviewStatisticsVO.setTotalClicks(totalClicks);
+        dataOverviewStatisticsVO.setTotalImpressions(totalImpressions);
+        dataOverviewStatisticsVO.setDaily(dailyList);
+        return dataOverviewStatisticsVO;
     }
+
 
     /**
      * 获取广告统计数据
@@ -392,7 +445,6 @@ public class AdvertisementsServiceImpl extends ServiceImpl<AdvertisementsMapper,
      * @param queryRequest 查询条件
      * @return 广告统计数据
      */
-
     @Override
     public AdvertisementStatisticsVO getAdvertisementStatistics(Long adId, DataOverviewQueryRequest queryRequest) {
         Long currentAdvertiserId = BaseContext.getCurrentId();
@@ -408,114 +460,97 @@ public class AdvertisementsServiceImpl extends ServiceImpl<AdvertisementsMapper,
             throw new BusinessException(ErrorCode.NOT_FOUND_ERROR, "广告不存在或只能查看自己上传的广告");
         }
 
-        // 构造查询条件
-        LambdaQueryWrapper<AdDisplays> queryWrapper = new LambdaQueryWrapper<>();
-        queryWrapper.eq(AdDisplays::getAdId, adId);
-
-        // 添加日期筛选条件
-        if (StringUtils.hasText(queryRequest.getStartDate())) {
-            queryWrapper.ge(AdDisplays::getDisplayTime, queryRequest.getStartDate());
-        }
-        if (StringUtils.hasText(queryRequest.getEndDate())) {
-            queryWrapper.le(AdDisplays::getDisplayTime, queryRequest.getEndDate());
-        }
-
-        // 查询展示数据
-        List<AdDisplays> adDisplaysList = adDisplaysMapper.selectList(queryWrapper);
-
-        // 计算统计数据
-        long totalImpressions = adDisplaysList.size();
-        long totalClicks = adDisplaysList.stream()
-                .mapToLong(display -> display.getClicked() != null ? display.getClicked() : 0)
-                .sum();
-
-        double ctr = totalImpressions > 0 ? (double) totalClicks / totalImpressions : 0.0;
-
-        // 生成完整日期范围
-        List<DailyStatisticsVO> dailyStats = new ArrayList<>();
-        if (StringUtils.hasText(queryRequest.getStartDate()) && StringUtils.hasText(queryRequest.getEndDate())) {
+        // 解析时间范围
+        Date startDate = null;
+        Date endDateExclusive = null;
+        if (queryRequest != null) {
             try {
-                SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd");
-                Date startDate = dateFormat.parse(queryRequest.getStartDate());
-                Date endDate = dateFormat.parse(queryRequest.getEndDate());
-
-                // 按天分组统计
-                Map<String, DailyStatisticsVO> dailyStatsMap = new LinkedHashMap<>();
-
-                for (AdDisplays display : adDisplaysList) {
-                    String dateStr = dateFormat.format(display.getDisplayTime());
-                    DailyStatisticsVO dailyStat = dailyStatsMap.computeIfAbsent(dateStr, k -> {
-                        DailyStatisticsVO stat = new DailyStatisticsVO();
-                        stat.setDate(k);
-                        stat.setImpressions(0L);
-                        stat.setClicks(0L);
-                        return stat;
-                    });
-
-                    // 增加展示数
-                    dailyStat.setImpressions(dailyStat.getImpressions() + 1);
-
-                    // 增加点击数
-                    if (display.getClicked() != null && display.getClicked() == 1) {
-                        dailyStat.setClicks(dailyStat.getClicks() + 1);
-                    }
+                if (StringUtils.hasText(queryRequest.getStartDate())) {
+                    startDate = DATE_FMT.parse(queryRequest.getStartDate());
                 }
-
-                // 生成完整日期范围并填充数据
-                Calendar calendar = Calendar.getInstance();
-                calendar.setTime(startDate);
-
-                while (!calendar.getTime().after(endDate)) {
-                    String dateStr = dateFormat.format(calendar.getTime());
-                    DailyStatisticsVO dailyStat = dailyStatsMap.get(dateStr);
-                    if (dailyStat == null) {
-                        dailyStat = new DailyStatisticsVO();
-                        dailyStat.setDate(dateStr);
-                        dailyStat.setImpressions(0L);
-                        dailyStat.setClicks(0L);
-                    }
-                    dailyStats.add(dailyStat);
-                    calendar.add(Calendar.DAY_OF_MONTH, 1);
+                if (StringUtils.hasText(queryRequest.getEndDate())) {
+                    Date parsedEnd = DATE_FMT.parse(queryRequest.getEndDate());
+                    Calendar cal = Calendar.getInstance();
+                    cal.setTime(parsedEnd);
+                    cal.add(Calendar.DAY_OF_MONTH, 1);
+                    endDateExclusive = cal.getTime();
                 }
             } catch (ParseException e) {
-                throw new BusinessException(ErrorCode.PARAMS_ERROR, "日期格式错误");
+                throw new BusinessException(ErrorCode.PARAMS_ERROR, "日期格式错误，应为 yyyy-MM-dd");
+            }
+        }
+
+        // 构造查询条件（按 adId）
+        LambdaQueryWrapper<AdDisplays> queryWrapper = new LambdaQueryWrapper<>();
+        queryWrapper.eq(AdDisplays::getAdId, adId);
+        if (startDate != null) {
+            queryWrapper.ge(AdDisplays::getDisplayTime, startDate);
+        }
+        if (endDateExclusive != null) {
+            queryWrapper.lt(AdDisplays::getDisplayTime, endDateExclusive);
+        }
+
+        List<AdDisplays> adDisplaysList = adDisplaysMapper.selectList(queryWrapper);
+        if (adDisplaysList == null) adDisplaysList = Collections.emptyList();
+
+        long totalImpressions = adDisplaysList.size();
+        long totalClicks = adDisplaysList.stream().filter(d -> d.getClicked() != null && d.getClicked() == 1).count();
+        double ctr = totalImpressions > 0 ? (double) totalClicks / totalImpressions : 0.0;
+
+        // 生成每日统计（同上）
+        Map<String, DailyStatisticsVO> dailyStatsMap = new LinkedHashMap<>();
+        SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd");
+        for (AdDisplays display : adDisplaysList) {
+            String dateStr = dateFormat.format(display.getDisplayTime());
+            DailyStatisticsVO dailyStat = dailyStatsMap.computeIfAbsent(dateStr, k -> {
+                DailyStatisticsVO stat = new DailyStatisticsVO();
+                stat.setDate(k);
+                stat.setImpressions(0L);
+                stat.setClicks(0L);
+                return stat;
+            });
+            dailyStat.setImpressions(dailyStat.getImpressions() + 1);
+            if (display.getClicked() != null && display.getClicked() == 1) {
+                dailyStat.setClicks(dailyStat.getClicks() + 1);
+            }
+        }
+
+        List<DailyStatisticsVO> dailyStats;
+        if (startDate != null && endDateExclusive != null) {
+            try {
+                Calendar cal = Calendar.getInstance();
+                cal.setTime(endDateExclusive);
+                cal.add(Calendar.DAY_OF_MONTH, -1);
+                Date endInclusive = cal.getTime();
+
+                List<DailyStatisticsVO> temp = new ArrayList<>();
+                cal.setTime(startDate);
+                while (!cal.getTime().after(endInclusive)) {
+                    String key = DATE_FMT.format(cal.getTime());
+                    DailyStatisticsVO ds = dailyStatsMap.getOrDefault(key, new DailyStatisticsVO());
+                    if (ds.getDate() == null) ds.setDate(key);
+                    if (ds.getImpressions() == null) ds.setImpressions(0L);
+                    if (ds.getClicks() == null) ds.setClicks(0L);
+                    temp.add(ds);
+                    cal.add(Calendar.DAY_OF_MONTH, 1);
+                }
+                dailyStats = temp;
+            } catch (Exception e) {
+                throw new BusinessException(ErrorCode.SYSTEM_ERROR, "生成日期序列失败");
             }
         } else {
-            // 如果没有指定日期范围，按原逻辑处理
-            Map<String, DailyStatisticsVO> dailyStatsMap = new LinkedHashMap<>();
-            SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd");
-
-            for (AdDisplays display : adDisplaysList) {
-                String dateStr = dateFormat.format(display.getDisplayTime());
-                DailyStatisticsVO dailyStat = dailyStatsMap.computeIfAbsent(dateStr, k -> {
-                    DailyStatisticsVO stat = new DailyStatisticsVO();
-                    stat.setDate(k);
-                    stat.setImpressions(0L);
-                    stat.setClicks(0L);
-                    return stat;
-                });
-
-                // 增加展示数
-                dailyStat.setImpressions(dailyStat.getImpressions() + 1);
-
-                // 增加点击数
-                if (display.getClicked() != null && display.getClicked() == 1) {
-                    dailyStat.setClicks(dailyStat.getClicks() + 1);
-                }
-            }
             dailyStats = new ArrayList<>(dailyStatsMap.values());
         }
 
-        // 构造返回对象
         AdvertisementStatisticsVO statisticsVO = new AdvertisementStatisticsVO();
         statisticsVO.setAdId(adId);
         statisticsVO.setTotalImpressions(totalImpressions);
         statisticsVO.setTotalClicks(totalClicks);
         statisticsVO.setCtr(ctr);
         statisticsVO.setDaily(dailyStats);
-
         return statisticsVO;
     }
+
 
     /**
      * 管理员分页查询广告列表（可按审核状态筛选）
@@ -562,30 +597,7 @@ public class AdvertisementsServiceImpl extends ServiceImpl<AdvertisementsMapper,
      * @param reason 拒绝原因
      * @return 更新后的广告信息
      */
-//    @Override
-//    public AdvertisementVO reviewAdvertisement(Long adId, Integer reviewStatus, String reason) {
-//        // 查询广告详情
-//        Advertisements advertisement = this.getById(adId);
-//
-//        if (advertisement == null) {
-//            throw new BusinessException(ErrorCode.NOT_FOUND_ERROR, "广告不存在");
-//        }
-//
-//        // 更新审核状态
-//        advertisement.setReviewStatus(reviewStatus);
-//        // 更新编辑时间
-//        advertisement.setEditTime(new Date());
-//        // 添加拒绝原因
-//        advertisement.setRejectReason(reason);
-//
-//        // 保存到数据库
-//        this.updateById(advertisement);
-//
-//        // 转换为VO对象并返回
-//        AdvertisementVO advertisementVO = new AdvertisementVO();
-//        BeanUtils.copyProperties(advertisement, advertisementVO);
-//        return advertisementVO;
-//    }
+
     @Override
     public AdvertisementReviewVO reviewAdvertisement(Long adId, Integer reviewStatus, String reason) {
 
