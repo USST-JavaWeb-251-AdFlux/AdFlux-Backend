@@ -20,6 +20,7 @@ import javax.annotation.Resource;
  */
 @RestController
 @RequestMapping("/track")
+@CrossOrigin(origins = "*", allowCredentials = "false")
 @RequireRole(disabled = true)
 public class TrackerController {
 
