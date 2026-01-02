@@ -23,6 +23,7 @@ import java.net.http.HttpRequest;
 import java.time.Duration;
 import java.util.Date;
 import java.util.List;
+import java.util.Objects;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
@@ -32,12 +33,15 @@ import java.util.stream.Collectors;
 @RequireRole("publisher")
 public class PublishersController {
 
-    private static final Pattern VERIFICATION_META_PATTERN = Pattern.compile(
-            "<meta(?=[^>]*\\bname=[\"']adflux-verification[\"'])(?=[^>]*\\bcontent=[\"']([^\"']+)[\"'])[^>]*>",
-            Pattern.CASE_INSENSITIVE);
+    private static final Pattern META_TAG_PATTERN = Pattern.compile("(?i)<meta[^>]*>");
+    private static final Pattern META_NAME_PATTERN = Pattern.compile("(?i)\\bname=[\"']adflux-verification[\"']");
+    private static final Pattern META_CONTENT_PATTERN = Pattern.compile("(?i)\\bcontent=[\"']([^\"']+)[\"']");
+    private static final Pattern URL_PROTOCOL_PATTERN = Pattern.compile("^(?i)https?://.*");
+    private static final Pattern HEAD_END_PATTERN = Pattern.compile("(?i)</head>");
 
-    private static final Duration VERIFY_TIMEOUT = Duration.ofSeconds(5);
+    private static final Duration VERIFY_TIMEOUT = Duration.ofSeconds(10);
     private static final int NOT_VERIFIED = 0;
+    private static final int MAX_HTML_SCAN_LENGTH = 10000;
 
     private static final HttpClient HTTP_CLIENT = HttpClient.newBuilder()
             .followRedirects(HttpClient.Redirect.NORMAL)
@@ -113,13 +117,17 @@ public class PublishersController {
         URI targetUri;
         try {
             String rawDomain = domain.trim();
-            if (!rawDomain.matches("^(?i)https?://.*")) {
+            if (!URL_PROTOCOL_PATTERN.matcher(rawDomain).matches()) {
                 rawDomain = "https://" + rawDomain;
             }
-            URI domainUri = URI.create(rawDomain);
+            URI domainUri = new URI(rawDomain);
             ThrowUtils.throwIf(domainUri.getHost() == null, ErrorCode.PARAMS_ERROR, "站点域名无效");
-            targetUri = new URI("https", null, domainUri.getHost(), domainUri.getPort(), "/", null, null);
-        } catch (URISyntaxException e) {
+            int port = domainUri.getPort();
+            if (port == 443) {
+                port = -1;
+            }
+            targetUri = new URI("https", null, domainUri.getHost(), port, "/", null, null);
+        } catch (URISyntaxException | IllegalArgumentException e) {
             throw new BusinessException(ErrorCode.PARAMS_ERROR, "站点域名无效");
         }
 
@@ -144,15 +152,28 @@ public class PublishersController {
 
         String expectedToken = site.getVerificationToken();
         String metaContent = null;
-        if (html != null) {
-            Matcher matcher = VERIFICATION_META_PATTERN.matcher(html);
-            if (matcher.find()) {
-                metaContent = matcher.group(1);
+        String scopedHtml = html;
+        Matcher headMatcher = HEAD_END_PATTERN.matcher(html);
+        if (headMatcher.find()) {
+            scopedHtml = html.substring(0, headMatcher.start());
+        } else if (html.length() > MAX_HTML_SCAN_LENGTH) {
+            scopedHtml = html.substring(0, MAX_HTML_SCAN_LENGTH);
+        }
+        Matcher metaMatcher = META_TAG_PATTERN.matcher(scopedHtml);
+        while (metaMatcher.find()) {
+            String tag = metaMatcher.group();
+            if (META_NAME_PATTERN.matcher(tag).find()) {
+                Matcher contentMatcher = META_CONTENT_PATTERN.matcher(tag);
+                if (contentMatcher.find()) {
+                    metaContent = contentMatcher.group(1);
+                    break;
+                }
             }
         }
 
         boolean matched = expectedToken != null && expectedToken.equals(metaContent);
-        if (matched && (site.getIsVerified() == null || site.getIsVerified() == NOT_VERIFIED)) {
+        Integer isVerified = site.getIsVerified();
+        if (matched && (isVerified == null || Objects.equals(isVerified, NOT_VERIFIED))) {
             site.setIsVerified(1);
             site.setVerifyTime(new Date());
             publishersService.updateById(site);
