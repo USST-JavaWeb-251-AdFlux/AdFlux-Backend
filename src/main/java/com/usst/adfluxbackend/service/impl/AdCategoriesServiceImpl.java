@@ -1,6 +1,7 @@
 package com.usst.adfluxbackend.service.impl;
 
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
+import com.usst.adfluxbackend.exception.BusinessException;
 import com.usst.adfluxbackend.mapper.AdCategoriesMapper;
 import com.usst.adfluxbackend.model.entity.AdCategories;
 import com.usst.adfluxbackend.service.AdCategoriesService;
@@ -36,6 +37,13 @@ public class AdCategoriesServiceImpl extends ServiceImpl<AdCategoriesMapper, AdC
      */
     @Override
     public AdCategories createCategory(String categoryName) {
+        // 根据categoryName检查是否已存在
+        AdCategories existingCategory = this.lambdaQuery()
+                .eq(AdCategories::getCategoryName, categoryName)
+                .one();
+        if (existingCategory != null) {
+            throw new BusinessException(1, "广告分类已存在");
+        }
         AdCategories category = new AdCategories();
         category.setCategoryName(categoryName);
         category.setCreateTime(new Date());
