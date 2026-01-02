@@ -31,4 +31,7 @@ public interface TrackerService {
      * @return AdSlotVO 广告数据
      */
     AdSlotVO selectAdForSlot(String trackId, String domain, Integer adType, Integer adLayout);
+
+    boolean updateAdDisplay(Long displayId, Integer duration, Integer clicked);
+
 }
