@@ -3,23 +3,47 @@ package com.usst.adfluxbackend.service.impl;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.usst.adfluxbackend.context.BaseContext;
+import com.usst.adfluxbackend.exception.BusinessException;
+import com.usst.adfluxbackend.exception.ErrorCode;
 import com.usst.adfluxbackend.mapper.PublishersMapper;
 import com.usst.adfluxbackend.model.entity.Publishers;
 import com.usst.adfluxbackend.service.PublishersService;
 import org.springframework.stereotype.Service;
 import org.springframework.util.DigestUtils;
 
+import java.io.IOException;
+import java.net.URI;
+import java.net.URISyntaxException;
+import java.net.http.HttpClient;
+import java.net.http.HttpRequest;
+import java.net.http.HttpResponse;
+import java.time.Duration;
 import java.util.Date;
 import java.util.List;
+import java.util.Objects;
 import java.util.UUID;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 /**
-* @author 30637
-* @description 针对表【publishers(网站站长信息表)】的数据库操作Service实现
-* @createDate 2025-12-14 10:53:24
-*/
+ * Service implementation for Publishers (website owners).
+ */
 @Service
 public class PublishersServiceImpl extends ServiceImpl<PublishersMapper, Publishers> implements PublishersService{
+
+    private static final Pattern META_TAG_PATTERN = Pattern.compile("(?i)<meta[^>]*>");
+    private static final Pattern META_NAME_PATTERN = Pattern.compile("(?i)\\bname=[\"']adflux-verification[\"']");
+    private static final Pattern META_CONTENT_PATTERN = Pattern.compile("(?i)\\bcontent=[\"']([^\"']+)[\"']");
+    private static final Pattern HEAD_END_PATTERN = Pattern.compile("(?i)</head>");
+
+    private static final Duration VERIFY_TIMEOUT = Duration.ofSeconds(10);
+    private static final int NOT_VERIFIED = 0;
+    private static final int MAX_HTML_SCAN_LENGTH = 10000;
+
+    private static final HttpClient HTTP_CLIENT = HttpClient.newBuilder()
+            .followRedirects(HttpClient.Redirect.NORMAL)
+            .connectTimeout(VERIFY_TIMEOUT)
+            .build();
 
     /**
      * 获取当前站长名下的网站列表
@@ -106,13 +130,73 @@ public class PublishersServiceImpl extends ServiceImpl<PublishersMapper, Publish
                 .eq(Publishers::getPublisherId, currentPublisherId));
         
         if (site == null) {
-            return false;
+            throw new BusinessException(ErrorCode.NOT_FOUND_ERROR, "站点不存在或无权限访问");
         }
         
-        // 这里应该实现实际的验证逻辑，例如访问网站检查验证代码
-        // 为简化起见，我们假设验证总是成功
-        site.setIsVerified(1);
-        site.setVerifyTime(new Date());
-        return this.updateById(site);
+        String domain = site.getDomain();
+        if (domain == null || domain.trim().isEmpty()) {
+            throw new BusinessException(ErrorCode.PARAMS_ERROR, "站点域名为空或无效");
+        }
+
+        URI targetUri;
+        try {
+            // 使用 https 且使用默认端口
+            targetUri = new URI("https", null, domain.trim(), -1, "/", null, null);
+        } catch (URISyntaxException | IllegalArgumentException e) {
+            throw new BusinessException(ErrorCode.PARAMS_ERROR, "站点域名无效");
+        }
+
+        String html;
+        try {
+            HttpRequest request = HttpRequest.newBuilder()
+                    .uri(targetUri)
+                    .timeout(VERIFY_TIMEOUT)
+                    .GET()
+                    .build();
+            HttpResponse<String> response = HTTP_CLIENT.send(request, HttpResponse.BodyHandlers.ofString());
+            if (response.statusCode() < 200 || response.statusCode() >= 300) {
+                throw new BusinessException(ErrorCode.OPERATION_ERROR, "访问站点失败，HTTP 状态码：" + response.statusCode());
+            }
+            html = response.body();
+        } catch (IOException e) {
+            throw new BusinessException(ErrorCode.OPERATION_ERROR, "访问站点失败：" + e.getMessage());
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            throw new BusinessException(ErrorCode.SYSTEM_ERROR, "请求被中断");
+        }
+
+        String expectedToken = site.getVerificationToken();
+        String metaContent = null;
+        String scopedHtml = html;
+        Matcher headMatcher = HEAD_END_PATTERN.matcher(html);
+        if (headMatcher.find()) {
+            scopedHtml = html.substring(0, headMatcher.start());
+        } else if (html.length() > MAX_HTML_SCAN_LENGTH) {
+            scopedHtml = html.substring(0, MAX_HTML_SCAN_LENGTH);
+        }
+        Matcher metaMatcher = META_TAG_PATTERN.matcher(scopedHtml);
+        while (metaMatcher.find()) {
+            String tag = metaMatcher.group();
+            if (META_NAME_PATTERN.matcher(tag).find()) {
+                Matcher contentMatcher = META_CONTENT_PATTERN.matcher(tag);
+                if (contentMatcher.find()) {
+                    metaContent = contentMatcher.group(1);
+                    break;
+                }
+            }
+        }
+
+        boolean matched = expectedToken != null && expectedToken.equals(metaContent);
+        if (!matched) {
+            throw new BusinessException(ErrorCode.OPERATION_ERROR, "站点未包含正确的验证标签");
+        }
+
+        Integer isVerified = site.getIsVerified();
+        if (isVerified == null || Objects.equals(isVerified, NOT_VERIFIED)) {
+            site.setIsVerified(1);
+            site.setVerifyTime(new Date());
+            this.updateById(site);
+        }
+        return true;
     }
 }
