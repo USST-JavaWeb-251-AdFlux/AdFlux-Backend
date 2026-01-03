@@ -359,4 +359,63 @@ public class TrackerServiceImpl implements TrackerService {
         // 确保权重不小于最小值
         return Math.max(timeWeight, 0.1);
     }
+    /**
+     * 更新广告展示记录状态
+     *
+     * 业务规则说明：
+     * 1. displayId、duration、clicked 均不能为空
+     * 2. clicked 只能是 0 或 1
+     * 3. 展示时长 duration 只能递增，不允许回退
+     * 4. 点击状态一旦为 1，不允许取消
+     * 5. 每次发生点击（clicked = 1）时，记录最后一次点击时间
+     *
+     * 该方法主要用于广告埋点上报，
+     * 用于统计广告展示行为与点击行为。
+     *
+     * @param displayId 广告展示记录 ID
+     * @param duration  当前累计展示时长
+     * @param clicked   是否发生点击（0 / 1）
+     * @return 是否更新成功
+     */
+    @Override
+    public boolean updateAdDisplay(Long displayId, Integer duration, Integer clicked) {
+
+        // 1. 基本参数校验
+        ThrowUtils.throwIf(displayId == null || duration == null || clicked == null,
+                ErrorCode.PARAMS_ERROR, "displayId/duration/clicked 不能为空");
+
+        // clicked 只能是 0 或 1
+        ThrowUtils.throwIf(clicked != 0 && clicked != 1,
+                ErrorCode.PARAMS_ERROR, "clicked 只能是 0 或 1");
+
+        // 2. 查询现有展示记录
+        AdDisplays existing = adDisplaysMapper.selectById(displayId);
+        ThrowUtils.throwIf(existing == null,
+                ErrorCode.NOT_FOUND_ERROR, "展示记录不存在");
+
+        Integer oldDuration = existing.getDuration() == null ? 0 : existing.getDuration();
+        Integer oldClicked = existing.getClicked() == null ? 0 : existing.getClicked();
+
+        // 3. duration 只增不减
+        ThrowUtils.throwIf(duration < oldDuration,
+                ErrorCode.PARAMS_ERROR, "新的停留时长不能比原来更短");
+
+        // 4. 点击状态不可回退
+        ThrowUtils.throwIf(oldClicked == 1 && clicked == 0,
+                ErrorCode.PARAMS_ERROR, "点击状态不能被取消");
+
+        // 5. 更新数据
+        UpdateWrapper<AdDisplays> updateWrapper = new UpdateWrapper<>();
+        updateWrapper.eq("displayId", displayId)
+                .set("duration", duration)
+                .set("clicked", clicked);
+
+        // 6. 记录最后一次点击时间
+        if (clicked == 1) {
+            updateWrapper.set("clickTime", new Timestamp(System.currentTimeMillis()));
+        }
+
+        return adDisplaysMapper.update(null, updateWrapper) > 0;
+    }
+
 }
