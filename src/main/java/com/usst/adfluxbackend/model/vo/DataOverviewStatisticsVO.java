@@ -27,6 +27,11 @@ public class DataOverviewStatisticsVO implements Serializable {
     private Double ctr;
 
     /**
+     * 广告主总支出
+     */
+    private Double totalSpend;
+
+    /**
      * 每日统计数据
      */
     private List<DailyStatisticsVO> daily;
