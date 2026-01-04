@@ -33,12 +33,21 @@ public class AdDebugWebSocket {
     /**
      * 广播消息给所有管理员
      */
-    public static void sendDebugInfo(Object message) {
+    public static void sendDebugInfo(String message) {
         for (Session session : sessions) {
-            try {
-                session.getBasicRemote().sendText(message.toString());
-            } catch (IOException e) {
-                e.printStackTrace();
+            if (session.isOpen()) {
+                // 对每个 session 加锁，保证同一时间只有一个线程能向该 session 写数据
+                // for 循环中的局部变量指向同一个 session 对象，所以能锁住
+                synchronized (session) {
+                    try {
+                        session.getBasicRemote().sendText(message);
+                    } catch (IOException e) {
+                        e.printStackTrace();
+                    } catch (IllegalStateException e) {
+                        // 防止极端的并发导致状态异常，捕获它以免影响主业务
+                        System.err.println("WS发送忙: " + e.getMessage());
+                    }
+                }
             }
         }
     }
