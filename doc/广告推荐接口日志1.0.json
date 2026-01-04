@@ -1,0 +1,77 @@
+{
+    "scoringProcess": {
+        "avgClickRate": 0, // 点击率
+        "browseHistorySummary": {
+             // 分类id ： 页面总停留时长
+            "2": 11
+        },
+        "totalDisplays": 28, // 总广告推荐数量
+        "totalClicks": 0, // 总点击数
+        "details": [
+            {
+                "categoryClickRate": 0, // 分类点击率（某个类别广告的点击数/某个类别广告的展示数）
+                "finalNormalizedWeight": 1, // 归一化之后的权重
+                "adjustmentRate": 0, // 通过权重差异调节后的权重
+                "categoryId": 2, // 分类id
+                "baseWeightByContent": 1 // 根据content表计算的基础权重
+            },
+            {
+                "categoryClickRate": 0,
+                "finalNormalizedWeight": 0,
+                "adjustmentRate": 0,
+                "categoryId": 2003448728110309378,
+                "baseWeightByContent": 0
+            }
+        ]
+    },
+    "selectionLogic": {
+        "randomSeed": 0.27101325063715287,
+        "logicTrace": [
+            {
+                "isHit": true,
+                "weight": 1,
+                "range": "0.0000 - 1.0000",
+                "categoryId": 2
+            },
+            {
+                "isHit": false,
+                "weight": 0,
+                "range": "1.0000 - 1.0000",
+                "categoryId": 2003448728110309378
+            }
+        ],
+        "finalSelectedId": 2 // 最终计算出的分类id
+    },
+    "costTime": 1587, // 切面方法 RT
+    "budgetFilterDetails": [
+        {
+            "isPassed": true, // 预算足够为 true
+            "adId": 2000105075087269890,
+            "weeklyBudget": 5000,
+            "currentSpent": 0.04
+        },
+        {
+            "isPassed": true,
+            "adId": 2001261427200401410,
+            "weeklyBudget": 100000,
+            "currentSpent": 3.34
+        },
+        {
+            "isPassed": true, 
+            "adId": 2001524558681137154,
+            "weeklyBudget": 500,
+            "currentSpent": 0.03
+        },
+        {
+            "isPassed": true,
+            "adId": 2003422339877318658,
+            "weeklyBudget": 1145.14,
+            "currentSpent": 14.75
+        }
+    ],
+    "finalSelect": {
+        "adId": 2003422339877318658,
+        "adTitle": "明日方舟 未许之地 限时活动开启",
+        "categoryId": 2
+    }
+}

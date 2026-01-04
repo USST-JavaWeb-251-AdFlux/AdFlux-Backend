@@ -26,6 +26,9 @@ import java.time.temporal.TemporalAdjusters;
 import java.util.*;
 import java.util.stream.Collectors;
 
+import static com.usst.adfluxbackend.common.AdBillCalculator.calculateAdvertiserCost;
+import static com.usst.adfluxbackend.constant.CostConstant.PRICE_PER_CLICK;
+import static com.usst.adfluxbackend.constant.CostConstant.PRICE_PER_DISPLAY;
 import static java.sql.Timestamp.valueOf;
 import static java.time.Duration.between;
 
@@ -211,14 +214,7 @@ public class TrackerServiceImpl implements TrackerService {
 
         // todo 有更好的方法再改
         // 遍历displays, 如果该记录的clicked字段为1，计费2元，否则 0.01
-        BigDecimal  totalCost = BigDecimal.ZERO;
-        for (AdDisplays display : displays) {
-            if (display.getClicked() == 1) {
-                totalCost = totalCost.add(BigDecimal.valueOf(2));
-            } else {
-                totalCost = totalCost.add(BigDecimal.valueOf(0.01));
-            }
-        }
+        BigDecimal  totalCost = calculateAdvertiserCost(displays);
         // 构建日志信息
         if (checkResultMap != null) {
             checkResultMap.put("adId", adId);
