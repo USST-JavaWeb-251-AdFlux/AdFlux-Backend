@@ -5,11 +5,10 @@ import lombok.Data;
 import java.io.Serializable;
 
 /**
- * 每日统计数据视图
+ * 发布主每日收益明细
  */
 @Data
-public class DailyStatisticsVO implements Serializable {
-
+public class DailyRevenueVO implements Serializable {
     /**
      * 日期
      */
@@ -24,10 +23,10 @@ public class DailyStatisticsVO implements Serializable {
      * 点击数
      */
     private Long clicks;
-
     /**
-     * 当日支出（广告主视角）
+     * 当日收益（发布主）
      */
-    private Double spend;
+    private Double revenue;
+
     private static final long serialVersionUID = 1L;
 }

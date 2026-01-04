@@ -35,6 +35,10 @@ public class AdvertisementStatisticsVO implements Serializable {
     private Double ctr;
 
     /**
+     * 广告总支出（广告主视角）
+     */
+    private Double totalSpend;
+    /**
      * 每日统计数据
      */
     private List<DailyStatisticsVO> daily;
