@@ -53,7 +53,14 @@ public class TrackerServiceImpl implements TrackerService {
         QueryWrapper<Publishers> pubWrapper = new QueryWrapper<>();
         pubWrapper.eq("domain", domain);
         Publishers publisher = publishersMapper.selectOne(pubWrapper);
+        // 域名不存在 -> 参数错误
         ThrowUtils.throwIf(publisher == null, ErrorCode.PARAMS_ERROR, "域名未找到对应的网站");
+
+        // 新增：拒绝未验证的网站
+        Integer isVerified = publisher.getIsVerified();
+        ThrowUtils.throwIf(isVerified == null || isVerified.intValue() != 1,
+                ErrorCode.FORBIDDEN_ERROR, "该网站未通过验证，拒绝访问");
+
         Long websiteId = publisher.getWebsiteId();
 
         // 根据类别名称查找类别ID
@@ -73,6 +80,7 @@ public class TrackerServiceImpl implements TrackerService {
         contentVisitStatsMapper.insert(stats);
         return stats.getVisitId();
     }
+
 
     @Override
     public boolean updateVisitDuration(Long visitId, Integer duration) {
@@ -99,6 +107,11 @@ public class TrackerServiceImpl implements TrackerService {
         if(publisher == null){
             throw new BusinessException(1, "域名未找到对应的网站");
         }
+        // 新增：拒绝未验证的网站
+        Integer isVerified = publisher.getIsVerified();
+        ThrowUtils.throwIf(isVerified == null || isVerified.intValue() != 1,
+                ErrorCode.FORBIDDEN_ERROR, "该网站未通过验证，拒绝访问");
+
         Long websiteId = publisher.getWebsiteId();
 
         // 从 advertisements 表中筛选符合条件的广告
