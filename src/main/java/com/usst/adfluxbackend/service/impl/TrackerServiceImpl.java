@@ -1,5 +1,8 @@
 package com.usst.adfluxbackend.service.impl;
 
+import cn.hutool.json.JSONArray;
+import cn.hutool.json.JSONObject;
+import cn.hutool.json.JSONUtil;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.usst.adfluxbackend.common.debug.AdDebugContext;
 import com.baomidou.mybatisplus.core.conditions.update.UpdateWrapper;
@@ -114,21 +117,16 @@ public class TrackerServiceImpl implements TrackerService {
 
         // 过滤超出周预算的广告
         List<Advertisements> filteredAds = new ArrayList<>();
-        List<Map<String, Object>> budgetFilterDetails = new ArrayList<>();
+        JSONArray budgetFilterDetailsArray = new JSONArray();
         for (Advertisements ad : candidateAds) {
-            if (!isWeeklyBudgetExceeded(ad.getAdId(), ad.getWeeklyBudget())) {
+            JSONObject adBudgetDetail = new JSONObject();
+            if (!isWeeklyBudgetExceeded(ad.getAdId(), ad.getWeeklyBudget(), adBudgetDetail)) {
                 filteredAds.add(ad);
-            } else {
-                // --- 新增埋点 ---
-                Map<String, Object> filterDetail = new HashMap<>();
-                filterDetail.put("adId", ad.getAdId());
-                filterDetail.put("weeklyBudget", ad.getWeeklyBudget());
-                filterDetail.put("status", "预算不足被移除");
-                budgetFilterDetails.add(filterDetail);
             }
+            budgetFilterDetailsArray.add(adBudgetDetail);
         }
-        AdDebugContext.record("预算过滤详情", "预算过滤详情: " + budgetFilterDetails.toString());
-        AdDebugContext.record("预算过滤总结", "共过滤 " + budgetFilterDetails.size() + " 个超出预算的广告，剩余 " + filteredAds.size() + " 个广告");
+        AdDebugContext.recordData("budgetFilterDetails", budgetFilterDetailsArray);
+        AdDebugContext.record("预算过滤总结", "剩余 " + filteredAds.size() + " 个广告");
 
         if (filteredAds.isEmpty()) {
             throw new BusinessException(1, "所有广告都超出预算");
@@ -193,9 +191,8 @@ public class TrackerServiceImpl implements TrackerService {
      * 检查广告的周预算是否已超支
      * 这里假设预算为金额，需要根据实际业务逻辑调整
      */
-    private boolean isWeeklyBudgetExceeded(Long adId, BigDecimal weeklyBudget) {
+    private boolean isWeeklyBudgetExceeded(Long adId, BigDecimal weeklyBudget, JSONObject adBudgetDetail) {
         if (weeklyBudget == null || weeklyBudget.compareTo(BigDecimal.ZERO) <= 0) {
-            AdDebugContext.record("预算检查", "广告ID:" + adId + " 无预算限制");
             return false; // 如果没有设置预算或预算为0或负数，则认为没有超支
         }
 
@@ -209,7 +206,6 @@ public class TrackerServiceImpl implements TrackerService {
         displayWrapper.eq("adId", adId)
                 .ge("displayTime", valueOf(weekStartDateTime.toLocalDateTime()));
         List<AdDisplays> displays = adDisplaysMapper.selectList(displayWrapper);
-        AdDebugContext.record("预算检查", "广告ID:" + adId + " 本周展示记录数:" + displays.size());
 
         // todo 有更好的方法再改
         // 遍历displays, 如果该记录的clicked字段为1，计费2元，否则 0.01
@@ -221,17 +217,12 @@ public class TrackerServiceImpl implements TrackerService {
                 totalCost = totalCost.add(BigDecimal.valueOf(0.01));
             }
         }
-
-        AdDebugContext.record("预算检查", "广告ID:" + adId + " 当前花费:" + totalCost + " 预算:" + weeklyBudget);
-        
+        // 构建日志信息
+        adBudgetDetail.put("adId", adId);
+        adBudgetDetail.put("currentSpent", totalCost.setScale(2, RoundingMode.HALF_UP));
+        adBudgetDetail.put("weeklyBudget", weeklyBudget.setScale(2, RoundingMode.HALF_UP));
         // 判断是否已超支 = 0也可投放，允许少量超出
-        boolean isExceeded = totalCost.compareTo(weeklyBudget) > 0;
-        if (isExceeded) {
-            AdDebugContext.record("预算检查", "广告ID:" + adId + " 超出预算");
-        } else {
-            AdDebugContext.record("预算检查", "广告ID:" + adId + " 未超出预算");
-        }
-        return isExceeded;
+        return totalCost.compareTo(weeklyBudget) > 0;
     }
 
     /**

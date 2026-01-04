@@ -1,15 +1,23 @@
 package com.usst.adfluxbackend.common.debug;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * 线程隔离的计算过程记录上下文
+ * 升级版：支持存储结构化对象
  */
 public class AdDebugContext {
-    // 每个线程持有自己的日志列表
+    // 1. 存纯文本日志 (List<String>)
     private static final ThreadLocal<List<String>> LOG_HOLDER = ThreadLocal.withInitial(ArrayList::new);
-    // 标记当前请求是否需要 Debug（比如只有管理员开启时才记录）
+
+    // 2. 【新增】存结构化数据 (Map<String, Object>) - 这里的 Object 不会被转成 String
+    private static final ThreadLocal<Map<String, Object>> DATA_HOLDER = ThreadLocal.withInitial(ConcurrentHashMap::new);
+
+    // 3. Debug 开关
     private static final ThreadLocal<Boolean> IS_DEBUG_MODE = ThreadLocal.withInitial(() -> false);
 
     public static void enable() {
@@ -21,7 +29,8 @@ public class AdDebugContext {
     }
 
     /**
-     * 记录一条计算细节
+     * 记录普通文本日志 (旧方法保持不变)
+     * 例如: record("预算检查", "开始检查预算...")
      */
     public static void record(String stepName, String detail) {
         if (isEnabled()) {
@@ -30,12 +39,39 @@ public class AdDebugContext {
     }
 
     /**
-     * 获取并清空日志（用于最后发送）
+     * 【新增】记录结构化数据对象
+     * 前端接收时会直接得到 JSON 对象，而不是字符串
+     * * @param key  前端取值用的字段名，如 "budgetDetails"
+     * @param data 具体的对象 (List, Map, JSONObject, POJO 等)
      */
-    public static List<String> getAndClear() {
-        List<String> logs = new ArrayList<>(LOG_HOLDER.get());
+    public static void recordData(String key, Object data) {
+        if (isEnabled()) {
+            DATA_HOLDER.get().put(key, data);
+        }
+    }
+
+    /**
+     * 【核心修改】获取并清空所有数据（合并 文本日志 + 结构化数据）
+     * 返回给 AOP 层直接序列化
+     */
+    public static Map<String, Object> getAndClearFinalData() {
+        Map<String, Object> finalResult = new HashMap<>();
+
+        // 1. 取出文本日志，放入 "logs" 字段
+        List<String> logs = LOG_HOLDER.get();
+        if (!logs.isEmpty()) {
+            finalResult.put("logs", new ArrayList<>(logs));
+        }
+
+        // 2. 取出结构化数据，直接平铺合并到结果中
+        // 例如：finalResult 中会有 "budgetDetails": [...]
+        finalResult.putAll(DATA_HOLDER.get());
+
+        // 3. 清理 ThreadLocal，防止内存泄漏
         LOG_HOLDER.remove();
+        DATA_HOLDER.remove();
         IS_DEBUG_MODE.remove();
-        return logs;
+
+        return finalResult;
     }
 }
