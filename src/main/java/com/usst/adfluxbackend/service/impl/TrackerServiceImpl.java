@@ -3,6 +3,7 @@ package com.usst.adfluxbackend.service.impl;
 import cn.hutool.json.JSONArray;
 import cn.hutool.json.JSONObject;
 import cn.hutool.json.JSONUtil;
+import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.usst.adfluxbackend.common.debug.AdDebugContext;
 import com.baomidou.mybatisplus.core.conditions.update.UpdateWrapper;
@@ -117,15 +118,24 @@ public class TrackerServiceImpl implements TrackerService {
 
         Long websiteId = publisher.getWebsiteId();
 
-        // 从 advertisements 表中筛选符合条件的广告
-        // todo 后续将adLayout修改过后需要修改
-        QueryWrapper<Advertisements> adWrapper = new QueryWrapper<>();
-        adWrapper.eq("adType", adType)
-                .eq("adLayout", adLayout)
-                .eq("reviewStatus", 1) // 已通过审核
-                .eq("isActive", 1);    // 激活状态
+        // 1. 计算30天前的 Date 对象
+        Calendar calendar = Calendar.getInstance();
+        calendar.add(Calendar.DAY_OF_MONTH, -30);
+        Date thirtyDaysAgo = calendar.getTime();
 
-        List<Advertisements> candidateAds = advertisementsMapper.selectList(adWrapper);
+        // 2. 构建查询条件
+        LambdaQueryWrapper<Advertisements> wrapper = new LambdaQueryWrapper<>();
+        wrapper.eq(Advertisements::getAdType, adType)
+                .eq(Advertisements::getAdLayout, adLayout)
+                .eq(Advertisements::getReviewStatus, 1) // 1-通过
+                .eq(Advertisements::getIsActive, 1)     // 1-是
+                // 筛选创建时间在最近30天内 (createTime >= 30天前)
+                .ge(Advertisements::getCreateTime, thirtyDaysAgo)
+                // 推荐：按时间倒序排列，最新的广告在前
+                .orderByDesc(Advertisements::getCreateTime);
+
+        // 3. 执行查询
+        List<Advertisements> candidateAds = advertisementsMapper.selectList(wrapper);
         
         if (candidateAds.isEmpty()) {
             throw new BusinessException(1, "没有符合条件的广告");
@@ -142,7 +152,10 @@ public class TrackerServiceImpl implements TrackerService {
             if (isPassed) {
                 filteredAds.add(ad);
             }
-            budgetCheckDetails.add(adCheckResult);
+            // 统计前20条即可
+            if(budgetCheckDetails.size() <= 20){
+                budgetCheckDetails.add(adCheckResult);
+            }
         }
         AdDebugContext.recordData("budgetFilterDetails", budgetCheckDetails);
         if (filteredAds.isEmpty()) {
