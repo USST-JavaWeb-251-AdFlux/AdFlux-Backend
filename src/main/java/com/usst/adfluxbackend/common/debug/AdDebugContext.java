@@ -14,7 +14,7 @@ public class AdDebugContext {
     // 1. 存纯文本日志 (List<String>)
     private static final ThreadLocal<List<String>> LOG_HOLDER = ThreadLocal.withInitial(ArrayList::new);
 
-    // 2. 【新增】存结构化数据 (Map<String, Object>) - 这里的 Object 不会被转成 String
+    // 2. 存结构化数据 (Map<String, Object>) - 这里的 Object 不会被转成 String
     private static final ThreadLocal<Map<String, Object>> DATA_HOLDER = ThreadLocal.withInitial(ConcurrentHashMap::new);
 
     // 3. Debug 开关
@@ -29,19 +29,9 @@ public class AdDebugContext {
     }
 
     /**
-     * 记录普通文本日志 (旧方法保持不变)
-     * 例如: record("预算检查", "开始检查预算...")
-     */
-    public static void record(String stepName, String detail) {
-        if (isEnabled()) {
-            LOG_HOLDER.get().add(String.format("[%s] %s", stepName, detail));
-        }
-    }
-
-    /**
-     * 【新增】记录结构化数据对象
-     * 前端接收时会直接得到 JSON 对象，而不是字符串
-     * * @param key  前端取值用的字段名，如 "budgetDetails"
+     * 记录结构化数据对象
+     * 前端接收时会直接得到 JSON 对象
+     * @param key  前端取值用的字段名，如 "budgetDetails"
      * @param data 具体的对象 (List, Map, JSONObject, POJO 等)
      */
     public static void recordData(String key, Object data) {
@@ -51,7 +41,6 @@ public class AdDebugContext {
     }
 
     /**
-     * 【核心修改】获取并清空所有数据（合并 文本日志 + 结构化数据）
      * 返回给 AOP 层直接序列化
      */
     public static Map<String, Object> getAndClearFinalData() {

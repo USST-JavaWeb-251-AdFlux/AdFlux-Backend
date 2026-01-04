@@ -36,7 +36,6 @@ public class AdDebugWebSocket {
     public static void sendDebugInfo(Object message) {
         for (Session session : sessions) {
             try {
-                // 这里发送的是 JSON 字符串
                 session.getBasicRemote().sendText(message.toString());
             } catch (IOException e) {
                 e.printStackTrace();

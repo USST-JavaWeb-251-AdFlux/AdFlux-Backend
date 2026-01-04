@@ -117,17 +117,18 @@ public class TrackerServiceImpl implements TrackerService {
 
         // 过滤超出周预算的广告
         List<Advertisements> filteredAds = new ArrayList<>();
-        JSONArray budgetFilterDetailsArray = new JSONArray();
+        List<Map<String, Object>> budgetCheckDetails = new ArrayList<>();
         for (Advertisements ad : candidateAds) {
-            JSONObject adBudgetDetail = new JSONObject();
-            if (!isWeeklyBudgetExceeded(ad.getAdId(), ad.getWeeklyBudget(), adBudgetDetail)) {
+            Map<String, Object> adCheckResult = new HashMap<>();
+            // 调用检查方法，传入 map 进行填充
+            boolean isPassed = !isWeeklyBudgetExceeded(ad.getAdId(), ad.getWeeklyBudget(), adCheckResult);
+
+            if (isPassed) {
                 filteredAds.add(ad);
             }
-            budgetFilterDetailsArray.add(adBudgetDetail);
+            budgetCheckDetails.add(adCheckResult);
         }
-        AdDebugContext.recordData("budgetFilterDetails", budgetFilterDetailsArray);
-        AdDebugContext.record("预算过滤总结", "剩余 " + filteredAds.size() + " 个广告");
-
+        AdDebugContext.recordData("budgetFilterDetails", budgetCheckDetails);
         if (filteredAds.isEmpty()) {
             throw new BusinessException(1, "所有广告都超出预算");
         }
@@ -138,17 +139,19 @@ public class TrackerServiceImpl implements TrackerService {
                 .collect(Collectors.toSet());
 
         // 第二步：根据用户喜好为分类加权
-        AdDebugContext.record("开始权重计算", "共有 " + categoryIds.size() + " 个分类参与计算");
         Map<Long, Double> categoryWeights = calculateCategoryWeights(trackId, categoryIds);
 
         // 第三步：使用加权随机算法选择一个分类
         Long selectedCategoryId = selectCategoryByWeight(categoryWeights);
         if (selectedCategoryId == null) {
-            // 如果无法计算权重，则随机选择一个分类
+            // 降级策略：随机选择
             selectedCategoryId = filteredAds.get(0).getCategoryId();
-            AdDebugContext.record("随机选择", "由于权重计算失败，随机选择分类ID: " + selectedCategoryId);
-        } else {
-            AdDebugContext.record("分类选择完成", "选中的分类ID: " + selectedCategoryId);
+            // 记录降级事件
+            Map<String, Object> fallbackEvent = new HashMap<>();
+            fallbackEvent.put("reason", "Weight calculation failed");
+            fallbackEvent.put("action", "Random fallback");
+            fallbackEvent.put("selectedCategoryId", selectedCategoryId);
+            AdDebugContext.recordData("selectionFallback", fallbackEvent);
         }
 
         Long finalSelectCategoryId = selectedCategoryId;
@@ -163,8 +166,6 @@ public class TrackerServiceImpl implements TrackerService {
         Random random = new Random();
         // 随机选择
         Advertisements selectedAd = adsInCategory.get(random.nextInt(adsInCategory.size()));
-        AdDebugContext.record("广告选择", "在分类 " + finalSelectCategoryId + " 中选择了广告ID: " + selectedAd.getAdId());
-
         // 第四步：记录展示数据
         AdDisplays adDisplay = new AdDisplays();
         adDisplay.setTrackId(trackId);
@@ -175,8 +176,13 @@ public class TrackerServiceImpl implements TrackerService {
         adDisplaysMapper.insert(adDisplay);
         Long displayId = adDisplay.getDisplayId();
 
+        Map<String, Object> finalWinner = new HashMap<>();
+        finalWinner.put("categoryId", finalSelectCategoryId);
+        finalWinner.put("adId", selectedAd.getAdId());
+        finalWinner.put("adTitle", selectedAd.getTitle());
+        AdDebugContext.recordData("finalSelect", finalWinner);
+
         // 第五步：返回响应
-        AdDebugContext.record("最终结果", "选中分类: " + finalSelectCategoryId + ", 选中广告: " + selectedAd.getAdId());
         AdSlotVO adSlotVO = new AdSlotVO();
         adSlotVO.setDisplayId(displayId);
         adSlotVO.setAdLayout(adLayout);
@@ -191,11 +197,7 @@ public class TrackerServiceImpl implements TrackerService {
      * 检查广告的周预算是否已超支
      * 这里假设预算为金额，需要根据实际业务逻辑调整
      */
-    private boolean isWeeklyBudgetExceeded(Long adId, BigDecimal weeklyBudget, JSONObject adBudgetDetail) {
-        if (weeklyBudget == null || weeklyBudget.compareTo(BigDecimal.ZERO) <= 0) {
-            return false; // 如果没有设置预算或预算为0或负数，则认为没有超支
-        }
-
+    private boolean isWeeklyBudgetExceeded(Long adId, BigDecimal weeklyBudget, Map<String, Object> checkResultMap) {
         // 获取当前周的开始日期（周一）
         LocalDate today = LocalDate.now();
         LocalDate weekStart = today.with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY));
@@ -218,156 +220,159 @@ public class TrackerServiceImpl implements TrackerService {
             }
         }
         // 构建日志信息
-        adBudgetDetail.put("adId", adId);
-        adBudgetDetail.put("currentSpent", totalCost.setScale(2, RoundingMode.HALF_UP));
-        adBudgetDetail.put("weeklyBudget", weeklyBudget.setScale(2, RoundingMode.HALF_UP));
+        if (checkResultMap != null) {
+            checkResultMap.put("adId", adId);
+            checkResultMap.put("currentSpent", totalCost.setScale(2, RoundingMode.HALF_UP));
+            checkResultMap.put("weeklyBudget", weeklyBudget != null ? weeklyBudget.setScale(2, RoundingMode.HALF_UP) : "Unlimited");
+            checkResultMap.put("isPassed", weeklyBudget == null || totalCost.compareTo(weeklyBudget) <= 0);
+        }
+        if (weeklyBudget == null || weeklyBudget.compareTo(BigDecimal.ZERO) <= 0) {
+            return false;
+        }
         // 判断是否已超支 = 0也可投放，允许少量超出
         return totalCost.compareTo(weeklyBudget) > 0;
     }
 
     /**
      * 根据用户历史行为计算分类权重
+     * 对应原来的 calculateCategoryWeights
      */
     private Map<Long, Double> calculateCategoryWeights(String trackId, Set<Long> categoryIds) {
         Map<Long, Double> weights = new HashMap<>();
 
-        // 浏览历史加权：查询 content_visit_stats 表
+        Map<String, Object> scoringDebugData = new HashMap<>();
+        List<Map<String, Object>> categoryScoreDetails = new ArrayList<>();
+
+        // --- 第一步：浏览历史加权 ---
+        // 查询 content_visit_stats 表
         QueryWrapper<ContentVisitStats> visitStatsWrapper = new QueryWrapper<>();
         visitStatsWrapper.eq("trackId", trackId)
                 .in("categoryId", categoryIds);
         List<ContentVisitStats> visitStatsList = contentVisitStatsMapper.selectList(visitStatsWrapper);
-        AdDebugContext.record("数据查询", "查询到 " + visitStatsList.size() + " 条访问历史记录");
 
-        // 计算各分类的访问时长权重
+        // 统计各分类的访问时长
         Map<Long, Integer> categoryDurationMap = new HashMap<>();
-        List<Map<String, Object>> browseDetails = new ArrayList<>();
         for (ContentVisitStats stat : visitStatsList) {
-            Long categoryId = stat.getCategoryId();
-            categoryDurationMap.merge(categoryId, stat.getDuration(), Integer::sum);
-            
-            // 收集浏览详情
-            Map<String, Object> browseDetail = new HashMap<>();
-            browseDetail.put("categoryId", categoryId);
-            browseDetail.put("duration", stat.getDuration());
-            browseDetail.put("visitId", stat.getVisitId());
-            browseDetails.add(browseDetail);
+            categoryDurationMap.merge(stat.getCategoryId(), stat.getDuration(), Integer::sum);
         }
-        AdDebugContext.record("浏览权重", "计算各分类浏览时长: " + categoryDurationMap.toString());
-        
-        // 记录浏览详情数组
-        AdDebugContext.record("分类浏览详情", "浏览详情数组: " + browseDetails.toString());
+        // 记录原始浏览数据
+        scoringDebugData.put("browseHistorySummary", categoryDurationMap);
 
-        // 归一化权重
+        // 计算基础权重
         int totalDuration = categoryDurationMap.values().stream().mapToInt(Integer::intValue).sum();
-        if (totalDuration > 0) {
-            for (Long categoryId : categoryIds) {
+        for (Long categoryId : categoryIds) {
+            if (totalDuration > 0) {
                 int duration = categoryDurationMap.getOrDefault(categoryId, 0);
                 weights.put(categoryId, (double) duration / totalDuration);
-            }
-            AdDebugContext.record("基础权重", "基于浏览时长计算基础权重: " + weights.toString());
-        } else {
-            // 如果没有历史数据，给所有分类相同的权重
-            for (Long categoryId : categoryIds) {
+            } else {
+                // 如果没有历史数据，给所有分类相同的权重
                 weights.put(categoryId, 1.0 / categoryIds.size());
             }
-            AdDebugContext.record("基础权重", "无历史数据，使用默认权重: " + weights.toString());
         }
 
-        // 点击历史加权：查询 ad_displays 表
+        // --- 第二步：点击历史 & 时间衰减 (Click History & Time Decay) ---
         QueryWrapper<AdDisplays> displayWrapper = new QueryWrapper<>();
         displayWrapper.eq("trackId", trackId);
         List<AdDisplays> displayList = adDisplaysMapper.selectList(displayWrapper);
-        AdDebugContext.record("点击数据", "查询到 " + displayList.size() + " 条点击历史记录");
 
-        // 计算用户总点击率
-        int totalClicks = (int) displayList.stream().filter(d -> d.getClicked() != null && d.getClicked() == 1).count();
+        // 计算用户总点击率 (Global CTR)
+        long totalClicks = displayList.stream().filter(d -> d.getClicked() != null && d.getClicked() == 1).count();
         int totalDisplays = displayList.size();
         double avgClickRate = totalDisplays > 0 ? (double) totalClicks / totalDisplays : 0.0;
-        AdDebugContext.record("点击率", "用户总点击率: " + avgClickRate + " (" + totalClicks + "/" + totalDisplays + ")");
 
-        // 根据用户实际点击率，给分类增加权重
+        // 记录点击率数据
+        scoringDebugData.put("avgClickRate", avgClickRate);
+        // 总推送数量
+        scoringDebugData.put("totalDisplays", totalDisplays);
+        // 用户总点击量
+        scoringDebugData.put("totalClicks", totalClicks);
+
+        // --- 第三步：基于点击率的权重修正 (Weight Adjustment) ---
         if (totalDisplays > 0) {
-            // 按分类统计点击率 统计分类展示总数和点击总数
             Map<Long, Integer> categoryClicks = new HashMap<>();
-            Map<Long, Double> categoryDisplays = new HashMap<>();
+            Map<Long, Double> categoryWeightedDisplays = new HashMap<>();
 
-            List<Map<String, Object>> clickDetails = new ArrayList<>();
-            List<Map<String, Object>> displayDetails = new ArrayList<>();
+            // 遍历每一条展示记录，计算时间加权
             for (AdDisplays display : displayList) {
-                // 需要获取广告的分类ID
+                // 这里为了获取分类ID查询了广告表 (性能优化点：实际生产中建议缓存或连表查询)
                 Advertisements ad = advertisementsMapper.selectById(display.getAdId());
+
                 if (ad != null && categoryIds.contains(ad.getCategoryId())) {
                     Long categoryId = ad.getCategoryId();
 
-                    Instant instant = display.getDisplayTime().toInstant();
-                    Timestamp timestamp = Timestamp.from(instant);
-                    
                     // 计算时间权重值
-                    double timeWeight = calculateTimeWeight(timestamp);
-                    
-                    // 使用时间权重更新展示统计
-                    categoryDisplays.merge(categoryId, timeWeight, Double::sum);
+                    Timestamp displayTime = Timestamp.from(display.getDisplayTime().toInstant());
+                    double timeWeight = calculateTimeWeight(displayTime);
+
+                    // 累加“时间加权后”的展示量
+                    categoryWeightedDisplays.merge(categoryId, timeWeight, Double::sum);
+
+                    // 累加“时间加权后”的点击量
                     if (display.getClicked() != null && display.getClicked() == 1) {
-                        // 点击也应用时间权重
                         categoryClicks.merge(categoryId, (int) Math.round(timeWeight), Integer::sum);
-                        Map<String, Object> clickDetail = new HashMap<>();
-                        clickDetail.put("categoryId", categoryId);
-                        clickDetail.put("timeWeight", timeWeight);
-                        clickDetail.put("displayTime", display.getDisplayTime());
-                        clickDetail.put("type", "click");
-                        clickDetails.add(clickDetail);
-                    } else {
-                        Map<String, Object> displayDetail = new HashMap<>();
-                        displayDetail.put("categoryId", categoryId);
-                        displayDetail.put("timeWeight", timeWeight);
-                        displayDetail.put("displayTime", display.getDisplayTime());
-                        displayDetail.put("type", "display");
-                        displayDetails.add(displayDetail);
                     }
                 }
             }
-            AdDebugContext.record("点击详情", "点击详情数组: " + clickDetails.toString());
-            AdDebugContext.record("展示详情", "展示详情数组: " + displayDetails.toString());
 
             // 更新权重，结合点击率
-            List<Map<String, Object>> weightCalculationDetails = new ArrayList<>();
             for (Long categoryId : categoryIds) {
-                Double categoryDisplayCount = categoryDisplays.getOrDefault(categoryId, 0.0);
-                if (categoryDisplayCount > 0) {
-                    int categoryClickCount = categoryClicks.getOrDefault(categoryId, 0);
-                    // 分类点击率：该类型点击总数 / 该类型展示总数
-                    double categoryClickRate = (double) categoryClickCount / categoryDisplayCount;
+                Map<String, Object> detail = new HashMap<>();
+                detail.put("categoryId", categoryId);
 
-                    // 计算权重差异
-                    // 该分类点击率 - 该用户点击率
-                    double weightAdjustment = (categoryClickRate - avgClickRate) * 0.8; // 调整幅度 突出点击率的影响
-                    double currentWeight = weights.get(categoryId);
-                    double finalWeight = Math.max(0, currentWeight + weightAdjustment);
+                double currentBaseWeight = weights.getOrDefault(categoryId, 0.0);
+                detail.put("baseWeightByContent", currentBaseWeight);
+
+                Double weightedDisplayCount = categoryWeightedDisplays.getOrDefault(categoryId, 0.0);
+
+                if (weightedDisplayCount > 0) {
+                    int weightedClickCount = categoryClicks.getOrDefault(categoryId, 0);
+                    // 分类点击率 = 加权点击 / 加权展示
+                    double categoryClickRate = (double) weightedClickCount / weightedDisplayCount;
+
+                    detail.put("categoryClickRate", categoryClickRate);
+
+                    // 核心公式：计算权重差异
+                    // (该分类点击率 - 用户平均点击率) * 调整系数
+                    double adjustment = (categoryClickRate - avgClickRate) * 0.8;
+                    detail.put("adjustmentRate", adjustment);
+
+                    // 确保权重不为负
+                    double finalWeight = Math.max(0, currentBaseWeight + adjustment);
                     weights.put(categoryId, finalWeight);
-
-                    // --- 新增埋点：记录详细的计算公式 ---
-                    Map<String, Object> weightDetail = new HashMap<>();
-                    weightDetail.put("categoryId", categoryId);
-                    weightDetail.put("baseWeight", currentWeight);
-                    weightDetail.put("adjustment", weightAdjustment);
-                    weightDetail.put("finalWeight", finalWeight);
-                    weightCalculationDetails.add(weightDetail);
+                } else {
+                    detail.put("adjustment", 0.0);
+                    detail.put("note", "该分类下无曝光记录");
                 }
+                categoryScoreDetails.add(detail);
             }
-            // 批量记录权重计算详情
-            if (!weightCalculationDetails.isEmpty()) {
-                AdDebugContext.record("权重计算详情", "权重计算详情数组: " + weightCalculationDetails.toString());
+        } else {
+            // 如果没有全局展示历史
+            for (Long categoryId : categoryIds) {
+                Map<String, Object> detail = new HashMap<>();
+                detail.put("categoryId", categoryId);
+                detail.put("baseWeight", weights.get(categoryId));
+                detail.put("note", "无全局展示历史");
+                categoryScoreDetails.add(detail);
             }
         }
 
-        // 标准化权重 归一化
+        // --- 第四步：归一化 (Normalization) ---
         double weightSum = weights.values().stream().mapToDouble(Double::doubleValue).sum();
         if (weightSum > 0) {
             for (Map.Entry<Long, Double> entry : weights.entrySet()) {
-                weights.put(entry.getKey(), entry.getValue() / weightSum);
+                double normalizedValue = entry.getValue() / weightSum;
+                weights.put(entry.getKey(), normalizedValue);
+
+                // 更新 debug 详情中的最终归一化权重
+                categoryScoreDetails.stream()
+                        .filter(d -> d.get("categoryId").equals(entry.getKey()))
+                        .findFirst()
+                        .ifPresent(d -> d.put("finalNormalizedWeight", normalizedValue));
             }
-            AdDebugContext.record("归一化", "最终各分类概率分布: " + weights.toString());
         }
+
+        scoringDebugData.put("details", categoryScoreDetails);
+        AdDebugContext.recordData("scoringProcess", scoringDebugData);
 
         return weights;
     }
@@ -376,42 +381,58 @@ public class TrackerServiceImpl implements TrackerService {
      * 使用加权随机算法选择一个分类
      */
     private Long selectCategoryByWeight(Map<Long, Double> weights) {
-        if (weights.isEmpty()) {
-            AdDebugContext.record("随机算法", "权重集合为空，无法选择分类");
+        if (weights == null || weights.isEmpty()) {
             return null;
         }
 
-        // 生成随机数
         double randomValue = Math.random();
-        AdDebugContext.record("随机算法", "生成随机数: " + randomValue + "，进行加权随机选择");
-        
+
+        // Debug 数据容器
+        Map<String, Object> selectionDebug = new HashMap<>();
+        selectionDebug.put("randomSeed", randomValue);
+        List<Map<String, Object>> logicTrace = new ArrayList<>();
+
         double cumulativeWeight = 0.0;
-        List<Map<String, Object>> randomSelectionDetails = new ArrayList<>();
-        
+        Long selectedId = null;
+
         for (Map.Entry<Long, Double> entry : weights.entrySet()) {
+            double rangeStart = cumulativeWeight;
+            // 累加权重
             cumulativeWeight += entry.getValue();
-            Map<String, Object> selectionDetail = new HashMap<>();
-            selectionDetail.put("categoryId", entry.getKey());
-            selectionDetail.put("weight", entry.getValue());
-            selectionDetail.put("cumulativeWeight", cumulativeWeight);
-            selectionDetail.put("randomValue", randomValue);
-            selectionDetail.put("selected", randomValue <= cumulativeWeight);
-            randomSelectionDetails.add(selectionDetail);
-            
-            if (randomValue <= cumulativeWeight) {
-                AdDebugContext.record("随机算法", "选中分类: " + entry.getKey());
-                AdDebugContext.record("随机选择详情", "随机选择过程详情: " + randomSelectionDetails.toString());
-                return entry.getKey();
+            double rangeEnd = cumulativeWeight;
+
+            // 检查随机数是否落在此区间
+            // 使用 flag 确保只选中第一个命中的分类
+            boolean isHit = (randomValue <= rangeEnd) && (selectedId == null);
+
+            if (isHit) {
+                selectedId = entry.getKey();
             }
+
+            // 记录步骤详情
+            Map<String, Object> step = new HashMap<>();
+            step.put("categoryId", entry.getKey());
+            step.put("weight", entry.getValue());
+            step.put("range", String.format("%.4f - %.4f", rangeStart, rangeEnd)); // 格式化区间字符串
+            step.put("isHit", isHit);
+            logicTrace.add(step);
         }
 
-        // 如果随机选择失败，返回第一个分类
-        Long firstCategory = weights.keySet().iterator().next();
-        AdDebugContext.record("随机算法", "随机选择失败，返回第一个分类: " + firstCategory);
-        AdDebugContext.record("随机选择详情", "随机选择过程详情: " + randomSelectionDetails.toString());
-        return firstCategory;
+        // 兜底策略：如果因为浮点数精度问题没有选中任何分类，默认选第一个
+        if (selectedId == null) {
+            selectedId = weights.keySet().iterator().next();
+            selectionDebug.put("fallbackTriggered", true);
+            selectionDebug.put("note", "由于精度问题触发兜底，选择第一个分类");
+        }
+
+        selectionDebug.put("logicTrace", logicTrace);
+        selectionDebug.put("finalSelectedId", selectedId);
+
+        // 记录选择逻辑结构化数据
+        AdDebugContext.recordData("selectionLogic", selectionDebug);
+
+        return selectedId;
     }
-    
     /**
      * 根据展示时间计算时间权重值
      * 时间越近，权重越大

@@ -32,17 +32,13 @@ public class AdDebugAspect {
         } finally {
             // 3. 业务执行完（无论成功失败），收集日志并推送
             if (AdDebugContext.isEnabled()) {
-                // 【关键修改】使用 getAndClearFinalData 获取混合数据 (Log文本 + 对象数据)
                 Map<String, Object> finalData = AdDebugContext.getAndClearFinalData();
 
                 // 只有当产生了数据才推送
                 if (!finalData.isEmpty()) {
                     // 向数据包中追加元数据
-                    finalData.put("timestamp", System.currentTimeMillis());
                     finalData.put("costTime", System.currentTimeMillis() - start);
 
-                    // 序列化 Map -> JSON 字符串
-                    // 因为 Map 里存的是真正的对象 (List/JSONObject)，Jackson 会完美序列化它们，不会出现转义符
                     String jsonMsg = objectMapper.writeValueAsString(finalData);
 
                     // 推送到 WebSocket
