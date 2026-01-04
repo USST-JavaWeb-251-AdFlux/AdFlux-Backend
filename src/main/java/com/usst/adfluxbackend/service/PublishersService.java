@@ -1,7 +1,9 @@
 package com.usst.adfluxbackend.service;
 
+import com.usst.adfluxbackend.model.dto.statistic.DataOverviewQueryRequest;
 import com.usst.adfluxbackend.model.entity.Publishers;
 import com.baomidou.mybatisplus.extension.service.IService;
+import com.usst.adfluxbackend.model.vo.PublisherRevenueStatisticsVO;
 
 import java.util.List;
 
@@ -51,4 +53,14 @@ public interface PublishersService extends IService<Publishers> {
      * @return 验证结果
      */
     boolean verifySiteOwnership(Long siteId);
+
+    /**
+     * 获取发布主所有网站的收益统计
+     */
+    PublisherRevenueStatisticsVO getPublisherStatistics(DataOverviewQueryRequest queryRequest);
+
+    /**
+     * 获取单个网站的收益统计
+     */
+    PublisherRevenueStatisticsVO getPublisherSiteStatistics(Long websiteId, DataOverviewQueryRequest queryRequest);
 }

@@ -5,7 +5,9 @@ import com.usst.adfluxbackend.common.ResultUtils;
 import com.usst.adfluxbackend.exception.ErrorCode;
 import com.usst.adfluxbackend.exception.ThrowUtils;
 import com.usst.adfluxbackend.model.dto.publisher.CreateSiteRequest;
+import com.usst.adfluxbackend.model.dto.statistic.DataOverviewQueryRequest;
 import com.usst.adfluxbackend.model.entity.Publishers;
+import com.usst.adfluxbackend.model.vo.PublisherRevenueStatisticsVO;
 import com.usst.adfluxbackend.model.vo.PublisherSiteVO;
 import com.usst.adfluxbackend.service.PublishersService;
 import org.springframework.beans.BeanUtils;
@@ -68,7 +70,27 @@ public class PublishersController {
         BeanUtils.copyProperties(site, siteVO);
         return ResultUtils.success(siteVO);
     }
-    
+
+    /**
+     * 获取当前发布主所有网站的收益统计（按时间范围）
+     */
+    @GetMapping("/statistics/summary")
+    public BaseResponse<PublisherRevenueStatisticsVO> getPublisherStatistics(DataOverviewQueryRequest queryRequest) {
+        PublisherRevenueStatisticsVO stats = publishersService.getPublisherStatistics(queryRequest);
+        return ResultUtils.success(stats);
+    }
+
+    /**
+     * 获取单个网站的收益统计（按时间范围）
+     */
+    @GetMapping("/sites/{websiteId}/statistics")
+    public BaseResponse<PublisherRevenueStatisticsVO> getPublisherSiteStatistics(
+            @PathVariable Long websiteId, DataOverviewQueryRequest queryRequest) {
+        PublisherRevenueStatisticsVO stats = publishersService.getPublisherSiteStatistics(websiteId, queryRequest);
+        return ResultUtils.success(stats);
+    }
+
+
     /**
      * 触发网站所有权验证：
      * 1. 固定使用 HTTPS 访问站点首页并跟随重定向

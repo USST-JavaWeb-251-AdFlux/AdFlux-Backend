@@ -37,7 +37,7 @@ public class AdBillCalculator {
 
     /**
      * 计算平台收益 (Platform Revenue)
-     * 假设平台收益 = 广告主花费 * 抽成率 (例如 30%)
+     * 假设平台收益 = 广告主花费 * 抽成率 (例如 50%)
      * 或者：收益 = 广告主花费 (如果全归平台)
      */
     public static BigDecimal calculatePlatformRevenue(BigDecimal totalAdvertiserCost) {

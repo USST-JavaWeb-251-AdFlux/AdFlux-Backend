@@ -30,7 +30,7 @@ public final class CostConstant {
      * 广告单次展示费用 (CPD - Cost Per Display / Impression)
      * 对应业务代码中的 BigDecimal.valueOf(0.01)
      */
-    public static final BigDecimal PRICE_PER_DISPLAY = new BigDecimal("0.01");
+    public static final BigDecimal PRICE_PER_DISPLAY = new BigDecimal("0.1");
 
     // ========================================================================
     // 分成与费率
@@ -38,7 +38,7 @@ public final class CostConstant {
 
     /**
      * 平台抽成率 (Platform Commission Rate)
-     * 示例：0.30 表示平台拿走 30%，流量主(Publisher) 拿 70%
+     * 示例：0.50 表示平台拿走 50%，流量主(Publisher) 拿 50%
      */
-    public static final BigDecimal PLATFORM_COMMISSION_RATE = new BigDecimal("0.30");
+    public static final BigDecimal PLATFORM_COMMISSION_RATE = new BigDecimal("0.50");
 }
