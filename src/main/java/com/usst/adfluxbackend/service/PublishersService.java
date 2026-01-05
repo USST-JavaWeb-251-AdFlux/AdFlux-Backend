@@ -63,4 +63,9 @@ public interface PublishersService extends IService<Publishers> {
      * 获取单个网站的收益统计
      */
     PublisherRevenueStatisticsVO getPublisherSiteStatistics(Long websiteId, DataOverviewQueryRequest queryRequest);
+
+    /**
+     * 统计系统中网站总数（不依赖当前登录用户）
+     */
+    long countSites();
 }
