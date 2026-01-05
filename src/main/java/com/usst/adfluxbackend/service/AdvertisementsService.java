@@ -106,4 +106,11 @@ public interface AdvertisementsService extends IService<Advertisements> {
      * @return 更新后的广告信息
      */
     AdvertisementReviewVO reviewAdvertisement(Long adId, Integer reviewStatus, String reason);
+
+    /**
+     * 管理员统计需要的计数方法
+     */
+    long countActiveReviewedAds();
+
+    long countPendingAds();
 }
