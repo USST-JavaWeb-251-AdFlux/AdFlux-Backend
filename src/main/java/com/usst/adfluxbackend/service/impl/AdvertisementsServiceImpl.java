@@ -660,6 +660,31 @@ public class AdvertisementsServiceImpl extends ServiceImpl<AdvertisementsMapper,
         advertisement.setCreateTime(now);
         advertisement.setEditTime(now);
     }
+    /**
+     * 统计已通过审核且启用的广告数量（admin dashboard）
+     *
+     * @return 数量
+     */
+    @Override
+    public long countActiveReviewedAds() {
+        LambdaQueryWrapper<Advertisements> q = new LambdaQueryWrapper<>();
+        q.eq(Advertisements::getReviewStatus, 1)
+                .eq(Advertisements::getIsActive, 1);
+        return this.count(q);
+    }
+
+    /**
+     * 统计待审核广告数量（admin dashboard）
+     *
+     * @return 数量
+     */
+    @Override
+    public long countPendingAds() {
+        LambdaQueryWrapper<Advertisements> q = new LambdaQueryWrapper<>();
+        q.eq(Advertisements::getReviewStatus, 0);
+        return this.count(q);
+    }
+
     // 辅助方法：对 double 临时值做小数位保留（用于每日累加）
     private static double roundDouble(Double v) {
         if (v == null) return 0.0;
