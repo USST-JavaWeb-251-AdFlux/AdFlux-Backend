@@ -7,7 +7,7 @@ AdFlux 是一个轻量级、智能化的广告投放与数据分析后台系统�
 ### 1. 智能广告推荐引擎
 系统通过多维度过滤与加权算法，为用户匹配最合适的广告：
 - **多级过滤**：支持网站接入验证、广告时效性检测（近30天）、审核状态及启用状态校验。
-- **动态预算控制**：实时计算广告商周预算消耗（支持展示计费 CPC 与点击计费 CPD 混合模型），确保投放不超支。
+- **动态预算控制**：实时计算广告商周预算消耗（支持展示计费 CPM 与点击计费 CPC 混合模型），确保投放不超支。
 - **个性化加权算法**：
     - **浏览时长分析**：基于用户在不同内容分类下的停留时间计算基础兴趣。
     - **反馈闭环（CTR修正）**：结合历史点击率差异进行权重补偿。
@@ -56,8 +56,7 @@ src/main/java/com/usst/adfluxbackend/
 - MySQL 8.0+
 
 ### 2. 数据库配置
-数据库在docs仓库中
-1. 执行 `src/main/resources/sql/` 目录下的 SQL 文件初始化表结构。
+1. 执行 SQL 文件初始化表结构（详见 [Database Design](https://github.com/USST-JavaWeb-251-AdFlux/docs/blob/main/Database-Design.md)）。
 2. 在 `src/main/resources/application-local.yml` (或 `application-dev.yml`) 中修改数据库连接信息：
    ```yaml
    spring:
