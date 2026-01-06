@@ -56,7 +56,6 @@ src/main/java/com/usst/adfluxbackend/
 - MySQL 8.0+
 
 ### 2. 数据库配置
-数据库在docs仓库中
 1. 执行 SQL 文件初始化表结构（详见 [Database Design](https://github.com/USST-JavaWeb-251-AdFlux/docs/blob/main/Database-Design.md)）。
 2. 在 `src/main/resources/application-local.yml` (或 `application-dev.yml`) 中修改数据库连接信息：
    ```yaml
