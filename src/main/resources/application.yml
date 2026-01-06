@@ -28,12 +28,12 @@ spring:
       max-request-size: 100MB
 
 app:
-  version: '@app.version@'
+  version: '@aapp.version@'
 
 # JWT配置
 jwt:
-  secret: adflux_backend_secret_key_adflux_backend_secret_key # 至少32位
-  expiration: 86400000 # 24小时，单位毫秒
+  secret: ${jwt.secret} # 至少32位
+  expiration: ${jwt.expiration} # 24小时，单位毫秒
 mybatis-plus:
   configuration:
     # MyBatis 配置
@@ -60,23 +60,13 @@ knife4j:
 
 # 文件上传配置
 ad-system:
-  upload-path: D:/data/ad-files/ # windows
-  access-prefix: /ad-resource/
+  upload-path: ${ad-system.upload-path}
+  access-prefix: ${ad-system.access-prefix}
 
-# 文件上传配置 Linux
-#ad-system:
-#  upload-path: /data/ad-files/  # Linux
-#  access-prefix: /ad-resource/
 
 # 媒体处理配置
 media:
   ffmpeg:
     # 只要配了环境变量，这里直接写 'ffprobe' 即可，系统会自动去 Path 里找
     # 如果没配环境变量，才需要写绝对路径
-    ffprobe-path: D:\work\ffmpeg-8.0.1-essentials_build\bin\ffprobe.exe
-#  媒体处理配置 Linux
-#media:
-#  ffmpeg:
-#    # 只要配了环境变量，这里直接写 'ffprobe' 即可，系统会自动去 Path 里找
-#    # 如果没配环境变量，才需要写绝对路径
-#    ffprobe-path: /usr/bin/ffprobe
+    ffprobe-path: ${media.ffmpeg.ffprobe-path}
