@@ -458,4 +458,16 @@ public class PublishersServiceImpl extends ServiceImpl<PublishersMapper, Publish
         }
         return true;
     }
+
+    /**
+     * 统计系统中网站数量（管理员视角）
+     *
+     * @return 网站总数
+     */
+    @Override
+    public long countSites() {
+        // 直接统计 publishers 表所有记录数
+        // 如果需要仅统计已验证网站，可加 .eq(Publishers::getIsVerified, 1)
+        return this.count(new LambdaQueryWrapper<Publishers>());
+    }
 }

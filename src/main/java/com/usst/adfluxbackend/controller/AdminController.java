@@ -146,16 +146,16 @@ public class AdminController {
         vo.setPendingAds(advertisementsService.countPendingAds());
 
         // 网站数量（PublishersService 提供 listSites）
-        List<Publishers> sites = publishersService.listSites();
-        vo.setTotalWebsites(sites == null ? 0L : (long) sites.size());
+        long siteCount = publishersService.countSites();
+        vo.setTotalWebsites(siteCount);
 
         // 用户数量（usersService.listUsers(null) 返回全部用户 VO 列表）
-        List<UsersVO> allUsers = usersService.listUsers(null);
-        vo.setTotalUsers(allUsers == null ? 0L : (long) allUsers.size());
+        long userCount = usersService.listUsers(null).size();
+        vo.setTotalUsers(userCount);
 
         // 分类数量（adCategoriesService 若有 list 方法 用其获取）
-        List<AdCategories> categories = adCategoriesService.listAllCategories();
-        vo.setTotalCategories(categories == null ? 0L : (long) categories.size());
+        long categoryCount = adCategoriesService.count(); // 若 service 继承 IService，这个方法可用；否则实现 countCategories()
+        vo.setTotalCategories(categoryCount);
 
         return ResultUtils.success(vo);
     }
