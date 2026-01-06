@@ -302,10 +302,8 @@ public class AdvertisementsServiceImpl extends ServiceImpl<AdvertisementsMapper,
             return null;
         }
         
-        // 只有审核通过的广告才能切换状态
-        if (!Objects.equals(advertisement.getReviewStatus(), 1)) {
-            throw new BusinessException(ErrorCode.PARAMS_ERROR, "广告未审核通过，无法切换状态");
-        }
+        // “审核通过”和“是否启用”是独立状态，无需关联。
+        // 只有两者都满足条件（过审且启用）才能进入候选广告列表。
         
         // 更新状态
         advertisement.setIsActive(toggleRequest.getIsActive());
