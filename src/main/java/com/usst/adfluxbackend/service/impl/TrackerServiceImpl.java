@@ -111,7 +111,7 @@ public class TrackerServiceImpl implements TrackerService {
         if(publisher == null){
             throw new BusinessException(1, "域名未找到对应的网站");
         }
-        // 新增：拒绝未验证的网站
+        // 拒绝未验证的网站
         Integer isVerified = publisher.getIsVerified();
         ThrowUtils.throwIf(isVerified == null || isVerified.intValue() != 1,
                 ErrorCode.FORBIDDEN_ERROR, "该网站未通过验证，拒绝访问");
@@ -238,8 +238,7 @@ public class TrackerServiceImpl implements TrackerService {
                 .ge("displayTime", valueOf(weekStartDateTime.toLocalDateTime()));
         List<AdDisplays> displays = adDisplaysMapper.selectList(displayWrapper);
 
-        // todo 有更好的方法再改
-        // 遍历displays, 如果该记录的clicked字段为1，计费2元，否则 0.01
+        // 遍历displays, 如果该记录的clicked字段为1，计费2元，否则 0.1
         BigDecimal  totalCost = calculateAdvertiserCost(displays);
         // 构建日志信息
         if (checkResultMap != null) {
@@ -277,20 +276,32 @@ public class TrackerServiceImpl implements TrackerService {
         for (ContentVisitStats stat : visitStatsList) {
             categoryDurationMap.merge(stat.getCategoryId(), stat.getDuration(), Integer::sum);
         }
-        // 记录原始浏览数据
+        // 记录原始浏览数据  key: categoryId, value: duration
         scoringDebugData.put("browseHistorySummary", categoryDurationMap);
 
         // 计算基础权重
         int totalDuration = categoryDurationMap.values().stream().mapToInt(Integer::intValue).sum();
+        double baseScore = 0.25;
         for (Long categoryId : categoryIds) {
-            if (totalDuration > 0) {
-                int duration = categoryDurationMap.getOrDefault(categoryId, 0);
-                weights.put(categoryId, (double) duration / totalDuration);
-            } else {
-                // 如果没有历史数据，给所有分类相同的权重
-                weights.put(categoryId, 1.0 / categoryIds.size());
-            }
+            double historyScore = totalDuration > 0 ? (double) categoryDurationMap.getOrDefault(categoryId, 0) / totalDuration : 0.0;
+            weights.put(categoryId, baseScore + historyScore); // 基础分 + 历史分
         }
+
+//        // 给所有分类添加一个基础权重
+//        for (Long categoryId : categoryIds) {
+//            weights.put(categoryId, 0.25); // 初始基础权重
+//        }
+//
+//
+//        for (Long categoryId : categoryIds) {
+//            if (totalDuration > 0) {
+//                int duration = categoryDurationMap.getOrDefault(categoryId, 0);
+//                weights.put(categoryId, (double) duration / totalDuration);
+//            } else {
+//                // 如果没有历史数据，给所有分类相同的权重
+//                weights.put(categoryId, 1.0 / categoryIds.size());
+//            }
+//        }
 
         // --- 第二步：点击历史 & 时间衰减 (Click History & Time Decay) ---
         QueryWrapper<AdDisplays> displayWrapper = new QueryWrapper<>();
@@ -314,10 +325,20 @@ public class TrackerServiceImpl implements TrackerService {
             Map<Long, Integer> categoryClicks = new HashMap<>();
             Map<Long, Double> categoryWeightedDisplays = new HashMap<>();
 
+            // 批量查询广告信息，避免循环查库
+            Set<Long> adIds = displayList.stream()
+                    .map(AdDisplays::getAdId)
+                    .collect(Collectors.toSet());
+            Map<Long, Advertisements> adMap = new HashMap<>();
+            if (!adIds.isEmpty()) {
+                List<Advertisements> ads = advertisementsMapper.selectBatchIds(adIds);
+                adMap = ads.stream().collect(Collectors.toMap(Advertisements::getAdId, ad -> ad));
+            }
+
             // 遍历每一条展示记录，计算时间加权
             for (AdDisplays display : displayList) {
-                // 这里为了获取分类ID查询了广告表 (性能优化点：实际生产中建议缓存或连表查询)
-                Advertisements ad = advertisementsMapper.selectById(display.getAdId());
+                // 从 map 中获取广告信息
+                Advertisements ad = adMap.get(display.getAdId());
 
                 if (ad != null && categoryIds.contains(ad.getCategoryId())) {
                     Long categoryId = ad.getCategoryId();
@@ -348,7 +369,7 @@ public class TrackerServiceImpl implements TrackerService {
 
                 if (weightedDisplayCount > 0) {
                     int weightedClickCount = categoryClicks.getOrDefault(categoryId, 0);
-                    // 分类点击率 = 加权点击 / 加权展示
+                    // 分类点击率 = 加权点击 / 加权展示 （该分类点击数/该分类展示数）
                     double categoryClickRate = (double) weightedClickCount / weightedDisplayCount;
 
                     detail.put("categoryClickRate", categoryClickRate);
