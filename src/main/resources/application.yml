@@ -28,7 +28,7 @@ spring:
       max-request-size: 100MB
 
 app:
-  version: '@aapp.version@'
+  version: '@app.version@'
 
 # JWT配置
 jwt:
