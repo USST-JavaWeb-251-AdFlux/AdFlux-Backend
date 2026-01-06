@@ -281,10 +281,20 @@ public class TrackerServiceImpl implements TrackerService {
 
         // 计算基础权重
         int totalDuration = categoryDurationMap.values().stream().mapToInt(Integer::intValue).sum();
-        double baseScore = 0.25;
+        
+        // 为每个分类添加少量虚拟时长，避免单条数据导致权重为1
+        int smoothingFactor = 5; // 每个分类虚拟5秒
+        int smoothedTotal = totalDuration + smoothingFactor * categoryIds.size();
+        
+        double baseScore = 0.2; // 基础分
         for (Long categoryId : categoryIds) {
-            double historyScore = totalDuration > 0 ? (double) categoryDurationMap.getOrDefault(categoryId, 0) / totalDuration : 0.0;
-            weights.put(categoryId, baseScore + historyScore); // 基础分 + 历史分
+            int actualDuration = categoryDurationMap.getOrDefault(categoryId, 0);
+            // 平滑后的历史分数
+            double historyScore = (double) (actualDuration + smoothingFactor) / smoothedTotal;
+            
+            // 基础分 + 历史分
+            double initialWeight = baseScore + historyScore;
+            weights.put(categoryId, initialWeight);
         }
 
 //        // 给所有分类添加一个基础权重
