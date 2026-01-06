@@ -206,8 +206,8 @@ public class TrackerServiceImpl implements TrackerService {
         Long displayId = adDisplay.getDisplayId();
 
         Map<String, Object> finalWinner = new HashMap<>();
-        finalWinner.put("categoryId", finalSelectCategoryId);
-        finalWinner.put("adId", selectedAd.getAdId());
+        finalWinner.put("categoryId", String.valueOf(finalSelectCategoryId));
+        finalWinner.put("adId", String.valueOf(selectedAd.getAdId()));
         finalWinner.put("adTitle", selectedAd.getTitle());
         AdDebugContext.recordData("finalSelect", finalWinner);
 
@@ -242,7 +242,7 @@ public class TrackerServiceImpl implements TrackerService {
         BigDecimal  totalCost = calculateAdvertiserCost(displays);
         // 构建日志信息
         if (checkResultMap != null) {
-            checkResultMap.put("adId", adId);
+            checkResultMap.put("adId", String.valueOf(adId));
             checkResultMap.put("currentSpent", totalCost.setScale(2, RoundingMode.HALF_UP));
             checkResultMap.put("weeklyBudget", weeklyBudget != null ? weeklyBudget.setScale(2, RoundingMode.HALF_UP) : "Unlimited");
             checkResultMap.put("isPassed", weeklyBudget == null || totalCost.compareTo(weeklyBudget) <= 0);
@@ -360,7 +360,7 @@ public class TrackerServiceImpl implements TrackerService {
             // 更新权重，结合点击率
             for (Long categoryId : categoryIds) {
                 Map<String, Object> detail = new HashMap<>();
-                detail.put("categoryId", categoryId);
+                detail.put("categoryId", String.valueOf(categoryId));
 
                 double currentBaseWeight = weights.getOrDefault(categoryId, 0.0);
                 detail.put("baseWeightByContent", currentBaseWeight);
@@ -392,7 +392,7 @@ public class TrackerServiceImpl implements TrackerService {
             // 如果没有全局展示历史
             for (Long categoryId : categoryIds) {
                 Map<String, Object> detail = new HashMap<>();
-                detail.put("categoryId", categoryId);
+                detail.put("categoryId", String.valueOf(categoryId));
                 detail.put("baseWeight", weights.get(categoryId));
                 detail.put("note", "无全局展示历史");
                 categoryScoreDetails.add(detail);
@@ -408,7 +408,7 @@ public class TrackerServiceImpl implements TrackerService {
 
                 // 更新 debug 详情中的最终归一化权重
                 categoryScoreDetails.stream()
-                        .filter(d -> d.get("categoryId").equals(entry.getKey()))
+                        .filter(d -> String.valueOf(entry.getKey()).equals(d.get("categoryId")))
                         .findFirst()
                         .ifPresent(d -> d.put("finalNormalizedWeight", normalizedValue));
             }
@@ -454,7 +454,7 @@ public class TrackerServiceImpl implements TrackerService {
 
             // 记录步骤详情
             Map<String, Object> step = new HashMap<>();
-            step.put("categoryId", entry.getKey());
+            step.put("categoryId", String.valueOf(entry.getKey()));
             step.put("weight", entry.getValue());
             step.put("range", String.format("%.4f - %.4f", rangeStart, rangeEnd)); // 格式化区间字符串
             step.put("isHit", isHit);
@@ -469,7 +469,7 @@ public class TrackerServiceImpl implements TrackerService {
         }
 
         selectionDebug.put("logicTrace", logicTrace);
-        selectionDebug.put("finalSelectedId", selectedId);
+        selectionDebug.put("finalSelectedId", String.valueOf(selectedId));
 
         // 记录选择逻辑结构化数据
         AdDebugContext.recordData("selectionLogic", selectionDebug);
