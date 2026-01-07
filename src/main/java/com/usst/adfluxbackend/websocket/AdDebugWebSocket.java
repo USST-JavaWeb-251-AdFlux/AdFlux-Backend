@@ -44,7 +44,6 @@ public class AdDebugWebSocket {
                     } catch (IOException e) {
                         e.printStackTrace();
                     } catch (IllegalStateException e) {
-                        // 防止极端的并发导致状态异常，捕获它以免影响主业务
                         System.err.println("WS发送忙: " + e.getMessage());
                     }
                 }

@@ -16,7 +16,7 @@ public class AdDebugAspect {
 
     private final ObjectMapper objectMapper = new ObjectMapper();
 
-    // 拦截你的 selectAdForSlot 方法，或者拦截 Controller 层
+    // 拦截selectAdForSlot 方法
     @Around("execution(* com.usst.adfluxbackend.service.impl.TrackerServiceImpl.selectAdForSlot(..))")
     public Object captureCalculation(ProceedingJoinPoint joinPoint) throws Throwable {
 

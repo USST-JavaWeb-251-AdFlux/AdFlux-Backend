@@ -256,7 +256,6 @@ public class TrackerServiceImpl implements TrackerService {
 
     /**
      * 根据用户历史行为计算分类权重
-     * 对应原来的 calculateCategoryWeights
      */
     private Map<Long, Double> calculateCategoryWeights(String trackId, Set<Long> categoryIds) {
         Map<Long, Double> weights = new HashMap<>();
@@ -283,10 +282,10 @@ public class TrackerServiceImpl implements TrackerService {
         int totalDuration = categoryDurationMap.values().stream().mapToInt(Integer::intValue).sum();
         
         // 为每个分类添加少量虚拟时长，避免单条数据导致权重为1
-        int smoothingFactor = 5; // 每个分类虚拟5秒
+        int smoothingFactor = 15; // 每个分类虚拟15秒
         int smoothedTotal = totalDuration + smoothingFactor * categoryIds.size();
         
-        double baseScore = 0.2; // 基础分
+        double baseScore = 0.2; // 基础权重
         for (Long categoryId : categoryIds) {
             int actualDuration = categoryDurationMap.getOrDefault(categoryId, 0);
             // 平滑后的历史分数
